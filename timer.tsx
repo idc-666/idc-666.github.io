@@ -1,5 +1,11 @@
-import { addPropertyControls, ControlType } from "framer"
-import { useEffect, useState } from "react"
+import React, { useState, useEffect } from "react"
+
+export const ControlType = {
+    String: "string",
+    Number: "number",
+    Color: "color",
+    Boolean: "boolean"
+}
 
 interface Props {
     fontSize?: number
@@ -8,12 +14,12 @@ interface Props {
     debug?: boolean
 }
 
-const Timer: React.ComponentType<Props> = ({
+export default function Timer({
     fontSize = 48,
     textColor = "#ffffff",
     fontFamily = "Bebas Neue",
     debug = false,
-}) => {
+}: Props) {
     const [time, setTime] = useState("")
     const [overtimeHours, setOvertimeHours] = useState<number | null>(null)
     const [overtimeMinutes, setOvertimeMinutes] = useState<number | null>(null)
@@ -42,8 +48,10 @@ const Timer: React.ComponentType<Props> = ({
                 }
 
                 const diffMs = now.getTime() - overtimeStart.getTime()
-                // 计算小时，保留一位小数
-                const diffHours = Math.floor((diffMs / (1000 * 60 * 30)) * 0.5 * 10) / 10
+                // 将毫秒转换为小时
+                const totalHours = diffMs / (1000 * 60 * 60)
+                // 向下取整到最近的 0.5 小时
+                const diffHours = Math.floor(totalHours * 2) / 2
                 setOvertimeHours(diffHours)
                 setOvertimeMinutes(null) // 不再需要分钟显示
             } else {
@@ -139,7 +147,7 @@ const Timer: React.ComponentType<Props> = ({
     )
 }
 
-addPropertyControls(Timer, {
+Timer.propertyControls = {
     fontFamily: {
         type: ControlType.String,
         title: "Font Family",
@@ -163,6 +171,4 @@ addPropertyControls(Timer, {
         title: "Debug Mode",
         defaultValue: false,
     },
-})
-
-export default Timer
+}
