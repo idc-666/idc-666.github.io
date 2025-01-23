@@ -2,28 +2,13 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>10分钟倒计时</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-      @media screen and (max-width: 768px) {
-        body {
-          transform: rotate(90deg);
-          transform-origin: center;
-          width: 100vh;
-          height: 100vw;
-          overflow: hidden;
-          position: fixed;
-        }
-        
-        #timer {
-          font-size: 45vh !important;  /* 在横屏模式下使用vh单位 */
-        }
-
-        .hint-text {
-          display: none;  /* 手机模式下隐藏提示文字 */
-        }
-      }
-
       body {
         margin: 0;
         padding: 0;
@@ -85,18 +70,16 @@
         z-index: 1000;
       }
 
-      .debug-icon:hover {
-        opacity: 0.8;
+      .version-text {
+        color: #666;
+        font-size: 12px;
+        opacity: 0.5;
+        position: fixed;
+        bottom: 15px;
+        left: 40px;
+        font-family: monospace;
       }
 
-      .hint-text {
-        color: #fff;
-        opacity: 0.5;
-        font-size: 16px;
-        margin-top: -30px;
-        font-family: sans-serif;  /* 使用普通字体，更容易阅读 */
-        letter-spacing: 1px;      /* 增加字间距 */
-      }
     </style>
   </head>
   <body>
@@ -107,8 +90,8 @@
         <span class="material-icons refresh-icon" onclick="resetTimer()">refresh</span>
       </div>
     </div>
-    <!-- 确保调试按钮在这里 -->
     <span class="material-icons debug-icon" onclick="debugSkip()">bug_report</span>
+    <span class="version-text">V_231207_1</span>
 
     <script>
       // 设置初始时间为 600 秒（10分钟）
@@ -186,12 +169,6 @@
       // 页面加载完成后自动开始倒计时
       window.onload = function() {
         startTimer();
-        // 如果是移动设备，自动进入全屏
-        if (isMobile() && !document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(err => {
-            console.log('全屏请求被拒绝');
-          });
-        }
       }
 
       // 调试功能：快进到倒计时最后10秒
