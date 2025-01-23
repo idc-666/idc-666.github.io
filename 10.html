@@ -19,6 +19,7 @@
         min-height: 100vh;
         background: #000;
         font-family: 'Bebas Neue', sans-serif;
+        transition: background-color 0.3s;  /* 添加背景色过渡效果 */
       }
       
       .container {
@@ -29,17 +30,16 @@
       }
       
       #timer {
-        font-size: 45vw;  /* 从 50vw 减小到 45vw */
-        color: #fff;
+        font-size: 45vw;
+        color: #fff;  /* 文字始终保持白色 */
         text-align: center;
         line-height: 1;
         cursor: pointer;
         user-select: none;
-        transition: color 0.3s;
       }
 
-      #timer.overtime {
-        color: #ff3333;  /* 超时后的红色 */
+      body.overtime {
+        background: #ff3333;  /* 超时后背景变为红色 */
       }
 
       #controls {
@@ -78,6 +78,11 @@
         bottom: 15px;
         left: 40px;
         font-family: monospace;
+      }
+
+      .hint-text {
+        color: #fff;
+        opacity: 0.5;
       }
 
     </style>
@@ -134,9 +139,9 @@
         if (timerId === null) {
           timerId = setInterval(() => {
             timeLeft--;
-            if (timeLeft === 0) {  // 改为只在等于0时播放声音
-              playEndSound(); // 播放提示音
-              document.getElementById('timer').classList.add('overtime'); // 添加红色样式
+            if (timeLeft === 0) {
+              playEndSound();
+              document.body.classList.add('overtime'); // 将红色样式添加到 body
             }
             updateDisplay();
           }, 1000);
@@ -147,7 +152,7 @@
         clearInterval(timerId);
         timerId = null;
         timeLeft = 600;
-        document.getElementById('timer').classList.remove('overtime'); // 移除红色样式
+        document.body.classList.remove('overtime'); // 从 body 移除红色样式
         updateDisplay();
         startTimer();
       }
