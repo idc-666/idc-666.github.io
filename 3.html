@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3分钟倒计时</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: #000;
+        font-family: 'Bebas Neue', sans-serif;
+        transition: background-color 0.3s;
+      }
+      
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px;
+      }
+      
+      #timer {
+        font-size: 45vw;
+        color: #fff;
+        text-align: center;
+        line-height: 1;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      body.overtime {
+        background: #ff3333;
+      }
+
+      #controls {
+        position: static;
+        transform: none;
+      }
+
+      .refresh-icon {
+        color: #fff;
+        cursor: pointer;
+        font-size: 36px;
+        opacity: 0.6;
+        transition: opacity 0.3s;
+      }
+
+      .refresh-icon:hover {
+        opacity: 1;
+      }
+
+      .debug-icon {
+        color: #666;
+        cursor: pointer;
+        font-size: 24px;
+        opacity: 0.5;
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        z-index: 1000;
+      }
+
+      .version-text {
+        color: #666;
+        font-size: 12px;
+        opacity: 0.5;
+        position: fixed;
+        bottom: 15px;
+        left: 40px;
+        font-family: monospace;
+      }
+
+      .hint-text {
+        color: #fff;
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="timer" ondblclick="toggleFullScreen()">03:00</div>
+      <div class="hint-text">双击全屏</div>
+      <div id="controls">
+        <span class="material-icons refresh-icon" onclick="resetTimer()">refresh</span>
+      </div>
+    </div>
+    <span class="material-icons debug-icon" onclick="debugSkip()">bug_report</span>
+    <span class="version-text">V_231207_1</span>
+
+    <script>
+      // 设置初始时间为 180 秒（3分钟）
+      let timeLeft = 180;
+      // 计时器ID，用于清除定时器
+      let timerId = null;
+
+      // 更新显示时间
+      function updateDisplay() {
+        const minutes = Math.floor(Math.abs(timeLeft) / 60);
+        const seconds = Math.abs(timeLeft) % 60;
+        const prefix = timeLeft < 0 ? '+' : '';
+        document.getElementById('timer').textContent = 
+          `${prefix}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+
+      // 播放结束提示音
+      function playEndSound() {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.1;
+        
+        oscillator.start();
+        
+        setTimeout(() => {
+          oscillator.stop();
+          audioContext.close();
+        }, 500);
+      }
+
+      // 开始倒计时
+      function startTimer() {
+        if (timerId === null) {
+          timerId = setInterval(() => {
+            timeLeft--;
+            if (timeLeft === 0) {
+              playEndSound();
+              document.body.classList.add('overtime');
+            }
+            updateDisplay();
+          }, 1000);
+        }
+      }
+
+      function resetTimer() {
+        clearInterval(timerId);
+        timerId = null;
+        timeLeft = 180;
+        document.body.classList.remove('overtime');
+        updateDisplay();
+        startTimer();
+      }
+
+      // 初始显示时间
+      updateDisplay();
+
+      // 切换全屏显示
+      function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+          document.querySelector('.hint-text').style.display = 'none';
+        } else {
+          document.exitFullscreen();
+          document.querySelector('.hint-text').style.display = 'block';
+        }
+      }
+
+      // 页面加载完成后自动开始倒计时
+      window.onload = function() {
+        startTimer();
+      }
+
+      // 调试功能：快进到倒计时最后10秒
+      function debugSkip() {
+        timeLeft = 10;
+        updateDisplay();
+      }
+    </script>
+  </body>
+</html>
