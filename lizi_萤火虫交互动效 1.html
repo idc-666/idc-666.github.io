@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firefly Particle Interaction Background</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #1a2525; /* 深色背景突出萤火虫光芒 */
+        }
+        canvas { 
+            display: block; 
+        }
+        #video { 
+            display: none; 
+        }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        #damping-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            opacity: 0.8;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        #damping-control label {
+            margin-bottom: 5px;
+        }
+        #damping-control input[type="range"] {
+            width: 150px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay muted playsinline></video>
+    <div id="instructions">Wave your hand to disturb fireflies, grip to form a sphere!</div>
+    <div id="damping-control">
+        <label>Damping: <span id="damping-value">0.5</span></label>
+        <input type="range" id="damping-slider" min="0.1" max="0.9" step="0.01" value="0.5">
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+    <script>
+        // 验证 Three.js 是否加载
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js failed to load from cdnjs. Attempting fallback CDN.');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/three@0.128.0/build/three.min.js';
+            script.onload = () => console.log('Three.js loaded from fallback CDN.');
+            script.onerror = () => {
+                console.error('Fallback CDN failed. Please check network.');
+                alert('Failed to load Three.js. Please check your network and try again.');
+            };
+            document.head.appendChild(script);
+        } else {
+            console.log('Three.js loaded successfully from cdnjs.');
+        }
+
+        // Three.js 粒子系统
+        const scene = new THREE.Scene();
+        const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x1a2525, 1); // 深色背景
+        document.body.appendChild(renderer.domElement);
+
+        // 创建圆形纹理
+        const createCircleTexture = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const context = canvas.getContext('2d');
+            context.beginPath();
+            context.arc(32, 32, 30, 0, Math.PI * 2);
+            context.fillStyle = 'white';
+            context.fill();
+            return new THREE.CanvasTexture(canvas);
+        };
+        const circleTexture = createCircleTexture();
+
+        // 创建粒子
+        const particleCount = 2000;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const basePositions = new Float32Array(particleCount * 3);
+        const opacities = new Float32Array(particleCount);
+        const glowPhases = new Float32Array(particleCount); // 用于控制萤火虫闪烁
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 20;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+            basePositions[i * 3] = positions[i * 3];
+            basePositions[i * 3 + 1] = positions[i * 3 + 1];
+            basePositions[i * 3 + 2] = positions[i * 3 + 2];
+            velocities[i * 3] = 0;
+            velocities[i * 3 + 1] = 0;
+            velocities[i * 3 + 2] = 0;
+            // 萤火虫颜色：随机在黄绿色范围内
+            const color = new THREE.Color().setHSL(0.2 + Math.random() * 0.1, 0.8, 0.6 + Math.random() * 0.2); // 黄绿色
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+            opacities[i] = 0.3 + Math.random() * 0.3; // 初始透明度
+            glowPhases[i] = Math.random() * Math.PI * 2; // 随机闪烁相位
+        }
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        particles.setAttribute('alpha', new THREE.BufferAttribute(opacities, 1));
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.2, // 稍大一些，模拟萤火虫光点
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            vertexColors: true,
+            map: circleTexture, // 圆形纹理
+            alphaAttribute: 'alpha'
+        });
+        particleMaterial.onBeforeCompile = (shader) => {
+            shader.vertexShader = shader.vertexShader
+                .replace(
+                    'void main() {',
+                    `
+                    attribute float alpha;
+                    varying float vAlpha;
+                    void main() {
+                        vAlpha = alpha;
+                    `
+                );
+            shader.fragmentShader = shader.fragmentShader
+                .replace(
+                    'void main() {',
+                    `
+                    varying float vAlpha;
+                    void main() {
+                    `
+                )
+                .replace(
+                    'gl_FragColor = vec4( diffuse, opacity );',
+                    'gl_FragColor = vec4( diffuse, opacity * vAlpha );'
+                );
+        };
+        const particleSystem = new THREE.Points(particles, particleMaterial);
+        scene.add(particleSystem);
+
+        camera3D.position.z = 10;
+
+        // 手势状态
+        let handPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        let isGripping = false;
+        let time = 0;
+        let scatterPhase = 0;
+        const centerX = 0;
+        const centerY = 0;
+        const sphereRadius = 1.5;
+
+        // 阻尼值（通过滑块控制）
+        let damping = 0.5;
+        const dampingSlider = document.getElementById('damping-slider');
+        const dampingValueDisplay = document.getElementById('damping-value');
+        dampingSlider.addEventListener('input', (event) => {
+            damping = parseFloat(event.target.value);
+            dampingValueDisplay.textContent = damping.toFixed(2);
+            console.log('Damping value updated to:', damping);
+        });
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.02;
+
+            const positions = particleSystem.geometry.attributes.position.array;
+            const opacities = particleSystem.geometry.attributes.alpha.array;
+
+            for (let i = 0; i < particleCount; i++) {
+                if (scatterPhase === 0) {
+                    if (!isGripping) {
+                        // 布朗运动：减慢速度
+                        const stepSize = 0.02; // 减小步长，模拟萤火虫慢速漂浮
+                        velocities[i * 3] += (Math.random() - 0.5) * stepSize;
+                        velocities[i * 3 + 1] += (Math.random() - 0.5) * stepSize;
+                        velocities[i * 3 + 2] += (Math.random() - 0.5) * stepSize;
+
+                        // 增加阻尼，减慢运动
+                        velocities[i * 3] *= 0.9; // 更强阻尼
+                        velocities[i * 3 + 1] *= 0.9;
+                        velocities[i * 3 + 2] *= 0.9;
+
+                        // 手势扰动：粒子在手掌附近被推开
+                        const normalizedHandX = 1 - (handPosition.x / window.innerWidth);
+                        const normalizedHandY = 1 - (handPosition.y / window.innerHeight);
+                        const handX = (normalizedHandX - 0.5) * 20;
+                        const handY = (normalizedHandY - 0.5) * 20;
+                        const dx = handX - positions[i * 3];
+                        const dy = handY - positions[i * 3 + 1];
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 5 && dist > 0) {
+                            const force = (5 - dist) * 0.02;
+                            velocities[i * 3] -= (dx / dist) * force;
+                            velocities[i * 3 + 1] -= (dy / dist) * force;
+                        }
+
+                        // 萤火虫闪烁效果
+                        glowPhases[i] += 0.05;
+                        opacities[i] = 0.3 + 0.5 * Math.sin(glowPhases[i]); // 透明度变化，模拟闪烁
+                    } else {
+                        // 抓握时形成球形并轻微波动
+                        const dx = centerX - positions[i * 3];
+                        const dy = centerY - positions[i * 3 + 1];
+                        const dz = 0 - positions[i * 3 + 2];
+                        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                        if (dist > sphereRadius + 0.1) {
+                            const force = 0.03 * (dist - sphereRadius);
+                            velocities[i * 3] += (dx / dist) * force;
+                            velocities[i * 3 + 1] += (dy / dist) * force;
+                            velocities[i * 3 + 2] += (dz / dist) * force;
+                        } else if (dist > sphereRadius) {
+                            const adjustedDamping = 0.1 + damping * 0.8;
+                            velocities[i * 3] *= adjustedDamping;
+                            velocities[i * 3 + 1] *= adjustedDamping;
+                            velocities[i * 3 + 2] *= adjustedDamping;
+                            console.log('Applying damping:', adjustedDamping);
+                        } else {
+                            velocities[i * 3] = 0;
+                            velocities[i * 3 + 1] = 0;
+                            velocities[i * 3 + 2] = 0;
+
+                            if (dist < sphereRadius - 0.1) {
+                                const scale = sphereRadius / dist;
+                                positions[i * 3] = centerX + dx * scale;
+                                positions[i * 3 + 1] = centerY + dy * scale;
+                                positions[i * 3 + 2] = dz * scale;
+                            }
+
+                            const fluctuation = 0.02 * Math.sin(time + i * 0.5);
+                            const dirX = dx / (dist || 1);
+                            const dirY = dy / (dist || 1);
+                            const dirZ = dz / (dist || 1);
+                            const dampingFactor = 1 - (damping * 0.9);
+                            positions[i * 3] += dirX * fluctuation * dampingFactor * 2;
+                            positions[i * 3 + 1] += dirY * fluctuation * dampingFactor * 2;
+                            positions[i * 3 + 2] += dirZ * fluctuation * dampingFactor * 2;
+
+                            const newDist = Math.sqrt(
+                                Math.pow(positions[i * 3] - centerX, 2) +
+                                Math.pow(positions[i * 3 + 1] - centerY, 2) +
+                                Math.pow(positions[i * 3 + 2], 2)
+                            );
+                            if (newDist > sphereRadius) {
+                                const scale = sphereRadius / newDist;
+                                positions[i * 3] = centerX + (positions[i * 3] - centerX) * scale;
+                                positions[i * 3 + 1] = centerY + (positions[i * 3 + 1] - centerY) * scale;
+                                positions[i * 3 + 2] *= scale;
+                            }
+
+                            // 抓握时停止闪烁，保持稳定亮度
+                            opacities[i] = 0.8;
+                        }
+                    }
+                } else if (scatterPhase === 1) {
+                    // 散射阶段
+                    const dx = positions[i * 3] - centerX;
+                    const dy = positions[i * 3 + 1] - centerY;
+                    const dz = positions[i * 3 + 2];
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    velocities[i * 3] += (dx / dist) * 0.05;
+                    velocities[i * 3 + 1] += (dy / dist) * 0.05;
+                    velocities[i * 3 + 2] += (dz / dist) * 0.05;
+                    opacities[i] -= 0.02;
+                    if (opacities[i] <= 0) {
+                        opacities[i] = 0;
+                        positions[i * 3] = (Math.random() - 0.5) * 20;
+                        positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                        positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+                        basePositions[i * 3] = positions[i * 3];
+                        basePositions[i * 3 + 1] = positions[i * 3 + 1];
+                        basePositions[i * 3 + 2] = positions[i * 3 + 2];
+                        velocities[i * 3] = 0;
+                        velocities[i * 3 + 1] = 0;
+                        velocities[i * 3 + 2] = 0;
+                        glowPhases[i] = Math.random() * Math.PI * 2; // 重置闪烁相位
+                    }
+                }
+
+                // 更新粒子位置
+                positions[i * 3] += velocities[i * 3];
+                positions[i * 3 + 1] += velocities[i * 3 + 1];
+                positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+                // 边界检查
+                if (Math.abs(positions[i * 3]) > 20 || Math.abs(positions[i * 3 + 1]) > 20 || Math.abs(positions[i * 3 + 2]) > 20) {
+                    positions[i * 3] = (Math.random() - 0.5) * 20;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+                    basePositions[i * 3] = positions[i * 3];
+                    basePositions[i * 3 + 1] = positions[i * 3 + 1];
+                    basePositions[i * 3 + 2] = positions[i * 3 + 2];
+                    velocities[i * 3] = 0;
+                    velocities[i * 3 + 1] = 0;
+                    velocities[i * 3 + 2] = 0;
+                    if (scatterPhase === 1) {
+                        opacities[i] = 0;
+                    }
+                    glowPhases[i] = Math.random() * Math.PI * 2;
+                }
+            }
+
+            // 检查散射阶段是否完成
+            if (scatterPhase === 1) {
+                let allFaded = true;
+                for (let i = 0; i < particleCount; i++) {
+                    if (opacities[i] > 0) {
+                        allFaded = false;
+                        break;
+                    }
+                }
+                if (allFaded) {
+                    scatterPhase = 0;
+                }
+            }
+
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.alpha.needsUpdate = true;
+            renderer.render(scene, camera3D);
+        }
+        animate();
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => {
+            camera3D.aspect = window.innerWidth / window.innerHeight;
+            camera3D.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 手势检测
+        async function setupHandTracking() {
+            try {
+                if (typeof Hands === 'undefined') {
+                    throw new Error('MediaPipe Hands is not defined. Check script loading.');
+                }
+
+                const video = document.getElementById('video');
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "user",
+                        width: 320,
+                        height: 240
+                    } 
+                });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    console.log('Camera initialized successfully.');
+                };
+
+                const hands = new Hands({
+                    locateFile: (file) => {
+                        console.log('Loading MediaPipe file:', file);
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`;
+                    }
+                });
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                hands.onResults((results) => {
+                    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                        const landmarks = results.multiHandLandmarks[0];
+                        handPosition.x = landmarks[0].x * window.innerWidth;
+                        handPosition.y = landmarks[0].y * window.innerHeight;
+                        console.log('Hand detected at:', handPosition.x.toFixed(2), handPosition.y.toFixed(2));
+
+                        const thumbTip = landmarks[4];
+                        const indexTip = landmarks[8];
+                        const distance = Math.sqrt(
+                            Math.pow(thumbTip.x - indexTip.x, 2) +
+                            Math.pow(thumbTip.y - indexTip.y, 2)
+                        );
+                        const wasGripping = isGripping;
+                        isGripping = distance < 0.05;
+                        console.log('Grip state:', isGripping ? 'Gripping' : 'Released');
+
+                        if (wasGripping && !isGripping) {
+                            scatterPhase = 1;
+                        }
+                    } else {
+                        console.log('No hand detected.');
+                        isGripping = false;
+                    }
+                });
+
+                await hands.initialize();
+                console.log('MediaPipe Hands initialized successfully.');
+
+                const camera = new Camera(video, {
+                    onFrame: async () => {
+                        await hands.send({ image: video });
+                    },
+                    width: 320,
+                    height: 240
+                });
+                await camera.start();
+                console.log('Camera started successfully.');
+            } catch (error) {
+                console.error('Hand tracking setup failed:', error.message);
+                alert('Failed to initialize hand tracking. Please ensure camera access is granted and check console for details.');
+                console.log('Falling back to particle animation without hand tracking.');
+            }
+        }
+
+        setupHandTracking();
+    </script>
+</body>
+</html>
