@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoTone Pro - 汽车HMI提示音生成器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --secondary: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --success: #38b000;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 1.5rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        
+        .nav-menu {
+            margin-top: 2rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .nav-item.active {
+            background-color: var(--primary);
+        }
+        
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            padding: 2rem;
+            background-color: white;
+            border-radius: 10px 0 0 0;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--dark);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 1rem;
+            font-weight: bold;
+        }
+        
+        /* 音效工作区 */
+        .sound-workspace {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+        
+        /* 音效编辑器 */
+        .sound-editor {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .sound-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .sound-category {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background-color: #e9ecef;
+        }
+        
+        .sound-category.warning {
+            background-color: #fff3bf;
+            color: #e67700;
+        }
+        
+        .sound-category.danger {
+            background-color: #ffd6e0;
+            color: #c2255c;
+        }
+        
+        .sound-category.success {
+            background-color: #d3f9d8;
+            color: #2b8a3e;
+        }
+        
+        .control-panel {
+            margin-top: 2rem;
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-title {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+            color: var(--gray);
+        }
+        
+        .slider-container {
+            margin-bottom: 1.5rem;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .param-value {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .waveform-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        
+        .wave-option {
+            padding: 0.8rem;
+            text-align: center;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .wave-option:hover {
+            background-color: #e9ecef;
+        }
+        
+        .wave-option.active {
+            border-color: var(--primary);
+            background-color: #e7f1ff;
+        }
+        
+        .wave-option i {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        /* 预览控制 */
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2a75e6;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--gray);
+            color: var(--gray);
+        }
+        
+        .btn-outline:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 音效库 */
+        .sound-library {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            height: fit-content;
+        }
+        
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-bar {
+            position: relative;
+            width: 100%;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.5rem;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            font-size: 0.9rem;
+        }
+        
+        .search-bar i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+        
+        .sound-list {
+            margin-top: 1rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .sound-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sound-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .sound-item.active {
+            background-color: #e7f1ff;
+            border-left-color: var(--primary);
+        }
+        
+        .sound-item-title {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        
+        .sound-item-desc {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        /* 导出面板 */
+        .export-panel {
+            margin-top: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        
+        .export-option {
+            padding: 1rem;
+            text-align: center;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #dee2e6;
+        }
+        
+        .export-option:hover {
+            background-color: #e9ecef;
+        }
+        
+        .export-option i {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        /* 可视化效果 */
+        .visualizer {
+            height: 100px;
+            margin: 20px 0;
+            background-color: #111;
+            border: 2px solid #444;
+            position: relative;
+            overflow: hidden;
+            border-radius: 6px;
+        }
+        
+        .bar {
+            position: absolute;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--primary);
+            display: inline-block;
+            margin: 0 1px;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .sound-workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .export-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边导航 -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-car"></i>
+                AutoTone Pro
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-item active">
+                    <i class="fas fa-wave-square"></i>
+                    音效设计
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-project-diagram"></i>
+                    项目库
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-book"></i>
+                    音效模板
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-file-export"></i>
+                    导出中心
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    系统设置
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="header">
+                <h1>提示音设计工作台</h1>
+                <div class="user-profile">
+                    <span>设计师</span>
+                    <div class="user-avatar">D</div>
+                </div>
+            </div>
+            
+            <div class="sound-workspace">
+                <!-- 音效编辑器 -->
+                <div class="sound-editor">
+                    <div class="editor-header">
+                        <div>
+                            <span class="sound-name">转向提示音</span>
+                            <span class="sound-category warning">警告类</span>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline" id="saveBtn">
+                                <i class="fas fa-save"></i> 保存
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 可视化效果 -->
+                    <div class="visualizer" id="visualizer">
+                        <!-- 动态生成音频条 -->
+                    </div>
+                    
+                    <div class="control-panel">
+                        <div class="control-group">
+                            <div class="control-title">
+                                <span>基础参数</span>
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>主频率</span>
+                                    <span class="param-value" id="freqValue">800 Hz</span>
+                                </div>
+                                <input type="range" class="slider" id="freqSlider" min="200" max="2000" value="800" step="10">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>次频率</span>
+                                    <span class="param-value" id="secondFreqValue">1200 Hz</span>
+                                </div>
+                                <input type="range" class="slider" id="secondFreqSlider" min="200" max="2000" value="1200" step="10">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>持续时间</span>
+                                    <span class="param-value" id="durationValue">150 ms</span>
+                                </div>
+                                <input type="range" class="slider" id="durationSlider" min="50" max="1000" value="150" step="10">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>音量</span>
+                                    <span class="param-value" id="volumeValue">75%</span>
+                                </div>
+                                <input type="range" class="slider" id="volumeSlider" min="0" max="100" value="75" step="1">
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-title">
+                                <span>波形选择</span>
+                            </div>
+                            <div class="waveform-selector">
+                                <div class="wave-option active" data-wave="square">
+                                    <i class="fas fa-wave-square"></i>
+                                    <span>方波</span>
+                                </div>
+                                <div class="wave-option" data-wave="sine">
+                                    <i class="fas fa-wave-sine"></i>
+                                    <span>正弦波</span>
+                                </div>
+                                <div class="wave-option" data-wave="triangle">
+                                    <i class="fas fa-wave-triangle"></i>
+                                    <span>三角波</span>
+                                </div>
+                                <div class="wave-option" data-wave="sawtooth">
+                                    <i class="fas fa-wave-saw"></i>
+                                    <span>锯齿波</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-title">
+                                <span>效果增强</span>
+                            </div>
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>颤音深度</span>
+                                    <span class="param-value" id="vibratoDepthValue">15%</span>
+                                </div>
+                                <input type="range" class="slider" id="vibratoDepthSlider" min="0" max="50" value="15" step="1">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>颤音速度</span>
+                                    <span class="param-value" id="vibratoSpeedValue">5 Hz</span>
+                                </div>
+                                <input type="range" class="slider" id="vibratoSpeedSlider" min="0" max="20" value="5" step="0.5">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="control-title">
+                                    <span>衰减曲线</span>
+                                    <span class="param-value" id="decayValue">线性</span>
+                                </div>
+                                <select id="decayType" class="slider" style="width:100%; padding:8px; border-radius:6px; border:1px solid #dee2e6;">
+                                    <option value="linear">线性衰减</option>
+                                    <option value="exponential">指数衰减</option>
+                                    <option value="step">阶梯衰减</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="preview-controls">
+                            <button class="btn btn-primary" id="playBtn">
+                                <i class="fas fa-play"></i> 试听
+                            </button>
+                            <button class="btn btn-outline" id="resetBtn">
+                                <i class="fas fa-redo"></i> 重置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 音效库 -->
+                <div class="sound-library">
+                    <div class="library-header">
+                        <h3>音效模板库</h3>
+                        <button class="btn btn-outline" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-plus"></i> 新建
+                        </button>
+                    </div>
+                    
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="搜索音效模板...">
+                    </div>
+                    
+                    <div class="sound-list">
+                        <div class="sound-item active">
+                            <div class="sound-item-title">转向提示音</div>
+                            <div class="sound-item-desc">标准转向灯滴答声</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">车门未关提醒</div>
+                            <div class="sound-item-desc">双音交替提示音</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">安全带提醒</div>
+                            <div class="sound-item-desc">渐进式警告音</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">倒车雷达</div>
+                            <div class="sound-item-desc">频率渐变提示音</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">充电完成</div>
+                            <div class="sound-item-desc">愉悦的完成音效</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">碰撞预警</div>
+                            <div class="sound-item-desc">紧急高频警告音</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">导航提示</div>
+                            <div class="sound-item-desc">简洁的提示音</div>
+                        </div>
+                        <div class="sound-item">
+                            <div class="sound-item-title">系统启动</div>
+                            <div class="sound-item-desc">品牌启动音效</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导出面板 -->
+            <div class="export-panel">
+                <h3>导出选项</h3>
+                <div class="export-options">
+                    <div class="export-option">
+                        <i class="fas fa-file-audio"></i>
+                        WAV格式
+                    </div>
+                    <div class="export-option">
+                        <i class="fas fa-file-code"></i>
+                        MP3格式
+                    </div>
+                    <div class="export-option">
+                        <i class="fas fa-file-alt"></i>
+                        JSON配置
+                    </div>
+                    <div class="export-option">
+                        <i class="fas fa-code"></i>
+                        C头文件
+                    </div>
+                    <div class="export-option">
+                        <i class="fab fa-android"></i>
+                        Android资源
+                    </div>
+                    <div class="export-option">
+                        <i class="fab fa-apple"></i>
+                        iOS资源
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化Web Audio API
+        let audioContext;
+        let gainNode;
+        let activeOscillators = [];
+        let isPlaying = false;
+        let currentWaveform = 'square';
+        let visualizerInterval;
+        
+        // 初始化可视化效果
+        function initVisualizer() {
+            const visualizer = document.getElementById('visualizer');
+            visualizer.innerHTML = '';
+            
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.left = `${i * 6}px`;
+                bar.style.height = `${Math.random() * 30 + 10}px`;
+                bar.style.backgroundColor = `hsl(${Math.random() * 60 + 200}, 80%, 50%)`;
+                visualizer.appendChild(bar);
+            }
+        }
+        
+        // 更新可视化效果
+        function updateVisualizer() {
+            const bars = document.querySelectorAll('.visualizer .bar');
+            bars.forEach(bar => {
+                const newHeight = Math.random() * 80 + 20;
+                bar.style.height = `${newHeight}px`;
+                bar.style.backgroundColor = `hsl(${Math.random() * 60 + 200}, 80%, 50%)`;
+            });
+        }
+        
+        // 初始化音频上下文（用户交互后）
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                gainNode = audioContext.createGain();
+                gainNode.connect(audioContext.destination);
+                
+                // 初始化可视化
+                initVisualizer();
+            }
+        }
+        
+        // 停止所有声音
+        function stopAllSounds() {
+            // 停止所有振荡器
+            activeOscillators.forEach(osc => {
+                try {
+                    if (osc.oscillator) osc.oscillator.stop();
+                    if (osc.lfo) osc.lfo.stop();
+                    if (osc.gain) osc.gain.disconnect();
+                } catch (e) {
+                    console.log("Error stopping oscillator:", e);
+                }
+            });
+            activeOscillators = [];
+            
+            // 停止播放状态
+            isPlaying = false;
+            updatePlayButton();
+            
+            // 清除可视化定时器
+            clearInterval(visualizerInterval);
+            
+            // 重置可视化条高度
+            const bars = document.querySelectorAll('.visualizer .bar');
+            bars.forEach(bar => {
+                bar.style.height = '10px';
+            });
+        }
+        
+        // 更新播放按钮状态
+        function updatePlayButton() {
+            const playBtn = document.getElementById('playBtn');
+            if (isPlaying) {
+                playBtn.innerHTML = '<i class="fas fa-stop"></i> 停止';
+                playBtn.classList.add('playing');
+            } else {
+                playBtn.innerHTML = '<i class="fas fa-play"></i> 试听';
+                playBtn.classList.remove('playing');
+            }
+        }
+        
+        // 播放音效
+        function playSound() {
+            // 确保音频上下文已初始化
+            initAudioContext();
+            
+            // 停止当前播放的声音
+            stopAllSounds();
+            
+            // 设置播放状态
+            isPlaying = true;
+            updatePlayButton();
+            
+            // 获取参数值
+            const freq = parseInt(document.getElementById('freqSlider').value);
+            const secondFreq = parseInt(document.getElementById('secondFreqSlider').value);
+            const duration = parseInt(document.getElementById('durationSlider').value) / 1000; // 转换为秒
+            const volume = parseInt(document.getElementById('volumeSlider').value) / 100;
+            const vibratoDepth = parseInt(document.getElementById('vibratoDepthSlider').value);
+            const vibratoSpeed = parseFloat(document.getElementById('vibratoSpeedSlider').value);
+            const decayType = document.getElementById('decayType').value;
+            
+            // 主振荡器
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = currentWaveform;
+            oscillator.frequency.value = freq;
+            
+            // 颤音效果
+            if (vibratoDepth > 0 && vibratoSpeed > 0) {
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+                
+                lfo.type = 'sine';
+                lfo.frequency.value = vibratoSpeed;
+                lfoGain.gain.value = freq * (vibratoDepth / 100);
+                
+                lfo.connect(lfoGain);
+                lfoGain.connect(oscillator.frequency);
+                lfo.start();
+                
+                activeOscillators.push({ lfo, gain: lfoGain });
+            }
+            
+            // 音量包络
+            const gain = audioContext.createGain();
+            gain.gain.value = volume;
+            
+            // 应用衰减曲线
+            const now = audioContext.currentTime;
+            if (decayType === 'exponential') {
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            } else if (decayType === 'step') {
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.setValueAtTime(volume * 0.7, now + duration * 0.3);
+                gain.gain.setValueAtTime(volume * 0.3, now + duration * 0.7);
+                gain.gain.setValueAtTime(0.001, now + duration);
+            } else { // linear
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + duration);
+            }
+            
+            // 连接并启动
+            oscillator.connect(gain);
+            gain.connect(gainNode);
+            oscillator.start(now);
+            oscillator.stop(now + duration);
+            
+            activeOscillators.push({ oscillator, gain });
+            
+            // 次振荡器（双音效果）
+            if (secondFreq > 0) {
+                const oscillator2 = audioContext.createOscillator();
+                oscillator2.type = currentWaveform;
+                oscillator2.frequency.value = secondFreq;
+                
+                const gain2 = audioContext.createGain();
+                gain2.gain.value = volume * 0.7; // 次音稍弱
+                
+                // 应用相同的衰减
+                if (decayType === 'exponential') {
+                    gain2.gain.setValueAtTime(volume * 0.7, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                } else if (decayType === 'step') {
+                    gain2.gain.setValueAtTime(volume * 0.7, now);
+                    gain2.gain.setValueAtTime(volume * 0.5, now + duration * 0.3);
+                    gain2.gain.setValueAtTime(volume * 0.2, now + duration * 0.7);
+                    gain2.gain.setValueAtTime(0.001, now + duration);
+                } else { // linear
+                    gain2.gain.setValueAtTime(volume * 0.7, now);
+                    gain2.gain.linearRampToValueAtTime(0.001, now + duration);
+                }
+                
+                oscillator2.connect(gain2);
+                gain2.connect(gainNode);
+                oscillator2.start(now);
+                oscillator2.stop(now + duration);
+                
+                activeOscillators.push({ oscillator: oscillator2, gain: gain2 });
+            }
+            
+            // 启动可视化效果
+            visualizerInterval = setInterval(updateVisualizer, 50);
+            
+            // 设置自动停止状态
+            setTimeout(() => {
+                if (isPlaying) {
+                    stopAllSounds();
+                }
+            }, duration * 1000 + 50);
+        }
+        
+        // 事件监听器
+        document.getElementById('playBtn').addEventListener('click', function() {
+            if (isPlaying) {
+                stopAllSounds();
+            } else {
+                playSound();
+            }
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            // 重置所有滑块值
+            document.getElementById('freqSlider').value = 800;
+            document.getElementById('freqValue').textContent = '800 Hz';
+            
+            document.getElementById('secondFreqSlider').value = 1200;
+            document.getElementById('secondFreqValue').textContent = '1200 Hz';
+            
+            document.getElementById('durationSlider').value = 150;
+            document.getElementById('durationValue').textContent = '150 ms';
+            
+            document.getElementById('volumeSlider').value = 75;
+            document.getElementById('volumeValue').textContent = '75%';
+            
+            document.getElementById('vibratoDepthSlider').value = 15;
+            document.getElementById('vibratoDepthValue').textContent = '15%';
+            
+            document.getElementById('vibratoSpeedSlider').value = 5;
+            document.getElementById('vibratoSpeedValue').textContent = '5 Hz';
+            
+            document.getElementById('decayType').value = 'linear';
+            document.getElementById('decayValue').textContent = '线性衰减';
+            
+            // 重置波形选择
+            document.querySelectorAll('.wave-option').forEach(opt => opt.classList.remove('active'));
+            document.querySelector('.wave-option[data-wave="square"]').classList.add('active');
+            currentWaveform = 'square';
+            
+            // 停止声音
+            stopAllSounds();
+        });
+        
+        // 滑块事件
+        document.querySelectorAll('.slider').forEach(slider => {
+            slider.addEventListener('input', function() {
+                const valueDisplay = this.closest('.slider-container').querySelector('.param-value');
+                if (valueDisplay) {
+                    if (this.id === 'volumeSlider') {
+                        valueDisplay.textContent = this.value + '%';
+                    } else if (this.id === 'durationSlider') {
+                        valueDisplay.textContent = this.value + ' ms';
+                    } else if (this.id === 'vibratoDepthSlider') {
+                        valueDisplay.textContent = this.value + '%';
+                    } else if (this.id === 'vibratoSpeedSlider') {
+                        valueDisplay.textContent = this.value + ' Hz';
+                    } else {
+                        valueDisplay.textContent = this.value + ' Hz';
+                    }
+                }
+                
+                // 如果正在播放，实时更新声音
+                if (isPlaying && this.id !== 'decayType') {
+                    stopAllSounds();
+                    playSound();
+                }
+            });
+        });
+        
+        // 波形选择
+        document.querySelectorAll('.wave-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.wave-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                currentWaveform = this.dataset.wave;
+                
+                if (isPlaying) {
+                    stopAllSounds();
+                    playSound();
+                }
+            });
+        });
+        
+        // 衰减类型选择
+        document.getElementById('decayType').addEventListener('change', function() {
+            document.getElementById('decayValue').textContent = 
+                this.value === 'linear' ? '线性衰减' : 
+                this.value === 'exponential' ? '指数衰减' : '阶梯衰减';
+            
+            if (isPlaying) {
+                stopAllSounds();
+                playSound();
+            }
+        });
+        
+        // 页面卸载时清理音频资源
+        window.addEventListener('beforeunload', stopAllSounds);
+        
+        // 初始化可视化效果
+        initVisualizer();
+    </script>
+</body>
+</html>

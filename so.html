@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI搜索</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: transparent;
+      padding: 20px;
+      color: #716E65;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 24px;
+    }
+
+    .nav-tab {
+      color: #716E65;
+      text-decoration: none;
+      font-size: 18px;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+      display: inline-block;
+      line-height: 1;
+      vertical-align: middle;
+    }
+
+    .nav-tab.active {
+      opacity: 1;
+      font-weight: bold;
+    }
+
+    .nav-tab:hover {
+      opacity: 1;
+    }
+
+    .search-container {
+      width: 90%;
+      max-width: 800px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 56px;
+      padding: 0 56px 0 24px;
+      font-size: 18px;
+      border: 1px solid #716E65;
+      border-radius: 12px;
+      background-color: transparent;
+      color: #716E65;
+      transition: all 0.3s ease;
+    }
+
+    .search-input::placeholder {
+      color: rgba(113, 110, 101, 0.5);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #716E65;
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      color: #716E65;
+      cursor: pointer;
+    }
+
+    .results-container {
+      margin-top: 12px;
+      background: rgba(113, 110, 101, 0.1);
+      border-radius: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      border: 1px solid #716E65;
+    }
+
+    .result-item {
+      padding: 12px 24px;
+      cursor: pointer;
+      color: #716E65;
+      transition: background-color 0.2s ease;
+    }
+
+    .result-item:hover {
+      background-color: rgba(113, 110, 101, 0.3);
+    }
+
+    .highlight {
+      color: #716E65;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav-tabs">
+    <a href="#" class="nav-tab active">AI搜索</a>
+    <a href="#" class="nav-tab">Bing</a>
+    <a href="#" class="nav-tab">Google</a>
+    <a href="#" class="nav-tab">Baidu</a>
+    <a href="#" class="nav-tab">Sougou</a>
+  </nav>
+
+  <div class="search-container">
+    <input type="text" class="search-input" placeholder="AI搜索" autocomplete="off">
+    <svg class="search-icon" viewBox="-2 -2 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 21L15.5 15.5M15.5 15.5C17.1569 13.8431 18 11.5719 18 9C18 4.02944 13.9706 0 9 0C4.02944 0 0 4.02944 0 9C0 13.9706 4.02944 18 9 18C11.5719 18 13.8431 17.1569 15.5 15.5Z" />
+    </svg>
+    <div class="results-container"></div>
+  </div>
+
+  <script>
+    const searchInput = document.querySelector('.search-input');
+    const resultsContainer = document.querySelector('.results-container');
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const searchIcon = document.querySelector('.search-icon');
+
+    window.onload = function () {
+      const aiSearchTab = document.querySelector('.nav-tab');
+      if (aiSearchTab) {
+        aiSearchTab.click();
+      }
+    };
+
+    function performSearch(searchTerm) {
+      const activeTab = document.querySelector('.nav-tab.active').textContent;
+      let searchUrl;
+
+      switch (activeTab) {
+        case 'AI搜索':
+          searchUrl = `https://metaso.cn/?q=${encodeURIComponent(searchTerm)}`;
+          break;
+        case 'Google':
+          searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`;
+          break;
+        case 'Baidu':
+          searchUrl = `https://www.baidu.com/s?wd=${encodeURIComponent(searchTerm)}`;
+          break;
+        case 'Sougou':
+          searchUrl = `https://www.sogou.com/web?query=${encodeURIComponent(searchTerm)}`;
+          break;
+        default:
+          searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(searchTerm)}`;
+      }
+
+      window.open(searchUrl, '_blank');
+    }
+
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && searchInput.value.trim() !== '') {
+        performSearch(searchInput.value.trim());
+      }
+    });
+
+    searchIcon.addEventListener('click', () => {
+      if (searchInput.value.trim() !== '') {
+        performSearch(searchInput.value.trim());
+      }
+    });
+
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        navTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        searchInput.placeholder = tab.textContent;
+      });
+    });
+
+    const sampleTags = [
+      "AI搜索", "ChatGPT", "Midjourney", "Stable Diffusion",
+      "DALL-E", "AI工具", "深度学习", "机器学习"
+    ];
+
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.trim().toLowerCase();
+
+      if (searchTerm === '') {
+        resultsContainer.style.display = 'none';
+        return;
+      }
+
+      const filteredTags = sampleTags.filter(tag =>
+        tag.toLowerCase().includes(searchTerm)
+      );
+
+      if (filteredTags.length > 0) {
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = filteredTags
+          .map(tag => {
+            const highlightedTag = tag.replace(
+              new RegExp(searchTerm, 'gi'),
+              match => `<span class="highlight">${match}</span>`
+            );
+            return `<div class="result-item">${highlightedTag}</div>`;
+          })
+          .join('');
+      } else {
+        resultsContainer.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-container') && !e.target.closest('.results-container')) {
+        resultsContainer.style.display = 'none';
+      }
+    });
+
+    resultsContainer.addEventListener('click', (e) => {
+      if (e.target.classList.contains('result-item')) {
+        const searchTerm = e.target.textContent;
+        searchInput.value = searchTerm;
+        resultsContainer.style.display = 'none';
+        performSearch(searchTerm);
+      }
+    });
+  </script>
+</body>
+</html>

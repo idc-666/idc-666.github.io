@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool Butterfly Interaction Background</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fm=jpg&w=1920') no-repeat center/cover;
+        }
+        canvas { 
+            display: block; 
+        }
+        #video { 
+            display: none; 
+        }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        #damping-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            opacity: 0.8;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        #damping-control label {
+            margin-bottom: 5px;
+        }
+        #damping-control input[type="range"] {
+            width: 150px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay muted playsinline></video>
+    <div id="instructions">Wave your hand to disturb butterflies, grip to form a sphere!</div>
+    <div id="damping-control">
+        <label>Damping: <span id="damping-value">0.5</span></label>
+        <input type="range" id="damping-slider" min="0.1" max="0.9" step="0.01" value="0.5">
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+    <script>
+        // 验证 Three.js 是否加载
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js failed to load from cdnjs. Attempting fallback CDN.');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/three@0.128.0/build/three.min.js';
+            script.onload = () => console.log('Three.js loaded from fallback CDN.');
+            script.onerror = () => {
+                console.error('Fallback CDN failed. Please check network.');
+                alert('Failed to load Three.js. Please check your network and try again.');
+            };
+            document.head.appendChild(script);
+        } else {
+            console.log('Three.js loaded successfully from cdnjs.');
+        }
+
+        // Three.js 场景设置
+        const scene = new THREE.Scene();
+        const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x1a1a1a, 0);
+        document.body.appendChild(renderer.domElement);
+
+        // 创建蝴蝶几何体
+        const butterflyCount = 1000;
+        const butterflies = [];
+        const velocities = new Float32Array(butterflyCount * 3);
+        const rotations = new Float32Array(butterflyCount * 3);
+        const wingAngles = new Float32Array(butterflyCount);
+        const wingFrequencies = new Float32Array(butterflyCount);
+
+        // 创建蝴蝶的翅膀几何体
+        const wingGeometry = new THREE.BufferGeometry();
+        const wingShape = new THREE.Shape();
+        wingShape.moveTo(0, 0);
+        wingShape.quadraticCurveTo(0.5, 0.5, 1, 0);
+        wingShape.quadraticCurveTo(0.5, -0.5, 0, 0);
+        const wingPoints = wingShape.getPoints(20);
+        const wingVertices = [];
+        const wingUVs = [];
+        
+        for (let i = 0; i < wingPoints.length; i++) {
+            wingVertices.push(wingPoints[i].x, wingPoints[i].y, 0);
+            wingUVs.push(wingPoints[i].x, wingPoints[i].y);
+        }
+        
+        wingGeometry.setAttribute('position', new THREE.Float32BufferAttribute(wingVertices, 3));
+        wingGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(wingUVs, 2));
+
+        // 创建蝴蝶材质
+        const butterflyMaterial = new THREE.MeshBasicMaterial({
+            color: 0x88ccff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+
+        // 创建蝴蝶群
+        for (let i = 0; i < butterflyCount; i++) {
+            const butterfly = new THREE.Group();
+
+            // 左翅膀
+            const leftWing = new THREE.Mesh(wingGeometry, butterflyMaterial.clone());
+            leftWing.material.color.setHSL(Math.random(), 0.8, 0.6);
+            leftWing.position.set(-0.5, 0, 0);
+            butterfly.add(leftWing);
+
+            // 右翅膀
+            const rightWing = new THREE.Mesh(wingGeometry, butterflyMaterial.clone());
+            rightWing.material.color.setHSL(Math.random(), 0.8, 0.6);
+            rightWing.position.set(0.5, 0, 0);
+            rightWing.scale.x = -1; // 镜像翅膀
+            butterfly.add(rightWing);
+
+            // 设置蝴蝶初始位置和属性
+            butterfly.position.set(
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20
+            );
+            butterfly.scale.set(5.4, 5.4, 5.4);
+
+            velocities[i * 3] = 0;
+            velocities[i * 3 + 1] = 0;
+            velocities[i * 3 + 2] = 0;
+            rotations[i * 3] = Math.random() * Math.PI * 2;
+            rotations[i * 3 + 1] = Math.random() * Math.PI * 2;
+            rotations[i * 3 + 2] = Math.random() * Math.PI * 2;
+            wingAngles[i] = 0;
+            wingFrequencies[i] = 5 + Math.random() * 5; // 随机翅膀扇动频率
+
+            butterflies.push(butterfly);
+            scene.add(butterfly);
+        }
+
+        camera3D.position.z = 40;
+
+        // 手势状态
+        let handPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        let isGripping = false;
+        let time = 0;
+        let scatterPhase = 0;
+        const centerX = 0;
+        const centerY = 0;
+        const sphereRadius = 1.5;
+
+        // 阻尼值（通过滑块控制）
+        let damping = 0.5;
+        const dampingSlider = document.getElementById('damping-slider');
+        const dampingValueDisplay = document.getElementById('damping-value');
+        dampingSlider.addEventListener('input', (event) => {
+            damping = parseFloat(event.target.value);
+            dampingValueDisplay.textContent = damping.toFixed(2);
+            console.log('Damping value updated to:', damping);
+        });
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.02;
+
+            for (let i = 0; i < butterflyCount; i++) {
+                const butterfly = butterflies[i];
+                if (scatterPhase === 0) {
+                    if (!isGripping) {
+                        // 布朗运动：随机步长更新位置
+                        const stepSize = 0.05; // 控制布朗运动步长
+                        velocities[i * 3] += (Math.random() - 0.5) * stepSize;
+                        velocities[i * 3 + 1] += (Math.random() - 0.5) * stepSize;
+                        velocities[i * 3 + 2] += (Math.random() - 0.5) * stepSize;
+
+                        // 轻微阻尼，防止蝴蝶移动过快
+                        velocities[i * 3] *= 0.95;
+                        velocities[i * 3 + 1] *= 0.95;
+                        velocities[i * 3 + 2] *= 0.95;
+
+                        // 手势扰动：蝴蝶在手掌附近被推开
+                        const normalizedHandX = 1 - (handPosition.x / window.innerWidth); // 左右反转
+                        const normalizedHandY = 1 - (handPosition.y / window.innerHeight); // 上下反转
+                        const handX = (normalizedHandX - 0.5) * 20;
+                        const handY = (normalizedHandY - 0.5) * 20;
+                        const dx = handX - butterfly.position.x;
+                        const dy = handY - butterfly.position.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 5 && dist > 0) {
+                            const force = (5 - dist) * 0.02; // 接近手掌时推开
+                            velocities[i * 3] -= (dx / dist) * force;
+                            velocities[i * 3 + 1] -= (dy / dist) * force;
+                        }
+
+                        // 更新蝴蝶朝向
+                        const direction = new THREE.Vector3(velocities[i * 3], velocities[i * 3 + 1], velocities[i * 3 + 2]);
+                        if (direction.length() > 0.01) {
+                            const targetRotation = Math.atan2(direction.x, direction.z);
+                            rotations[i * 3 + 1] += (targetRotation - rotations[i * 3 + 1]) * 0.1;
+                        }
+                    } else {
+                        // 抓握时形成球形并轻微波动
+                        const dx = centerX - butterfly.position.x;
+                        const dy = centerY - butterfly.position.y;
+                        const dz = 0 - butterfly.position.z;
+                        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                        if (dist > sphereRadius + 0.1) {
+                            // 向中心吸引
+                            const force = 0.03 * (dist - sphereRadius);
+                            velocities[i * 3] += (dx / dist) * force;
+                            velocities[i * 3 + 1] += (dy / dist) * force;
+                            velocities[i * 3 + 2] += (dz / dist) * force;
+                        } else if (dist > sphereRadius) {
+                            // 接近球形边界时，动态阻尼
+                            const adjustedDamping = 0.1 + damping * 0.8;
+                            velocities[i * 3] *= adjustedDamping;
+                            velocities[i * 3 + 1] *= adjustedDamping;
+                            velocities[i * 3 + 2] *= adjustedDamping;
+                        } else {
+                            // 在球形内部，轻微波动
+                            velocities[i * 3] = 0;
+                            velocities[i * 3 + 1] = 0;
+                            velocities[i * 3 + 2] = 0;
+
+                            // 确保蝴蝶分布在球形表面
+                            if (dist < sphereRadius - 0.1) {
+                                const scale = sphereRadius / dist;
+                                butterfly.position.x = centerX + dx * scale;
+                                butterfly.position.y = centerY + dy * scale;
+                                butterfly.position.z = dz * scale;
+                            }
+
+                            // 添加轻微波动，模拟能量汇集
+                            const fluctuation = 0.02 * Math.sin(time + i * 0.5);
+                            const dirX = dx / (dist || 1);
+                            const dirY = dy / (dist || 1);
+                            const dirZ = dz / (dist || 1);
+                            const dampingFactor = 1 - (damping * 0.9);
+                            butterfly.position.x += dirX * fluctuation * dampingFactor * 2;
+                            butterfly.position.y += dirY * fluctuation * dampingFactor * 2;
+                            butterfly.position.z += dirZ * fluctuation * dampingFactor * 2;
+
+                            // 限制波动后蝴蝶仍在球形范围内
+                            const newDist = Math.sqrt(
+                                Math.pow(butterfly.position.x - centerX, 2) +
+                                Math.pow(butterfly.position.y - centerY, 2) +
+                                Math.pow(butterfly.position.z, 2)
+                            );
+                            if (newDist > sphereRadius) {
+                                const scale = sphereRadius / newDist;
+                                butterfly.position.x = centerX + (butterfly.position.x - centerX) * scale;
+                                butterfly.position.y = centerY + (butterfly.position.y - centerY) * scale;
+                                butterfly.position.z *= scale;
+                            }
+                        }
+                    }
+                } else if (scatterPhase === 1) {
+                    // 散射阶段
+                    const dx = butterfly.position.x - centerX;
+                    const dy = butterfly.position.y - centerY;
+                    const dz = butterfly.position.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    velocities[i * 3] += (dx / dist) * 0.05;
+                    velocities[i * 3 + 1] += (dy / dist) * 0.05;
+                    velocities[i * 3 + 2] += (dz / dist) * 0.05;
+
+                    // 更新蝴蝶透明度
+                    butterfly.children.forEach(wing => {
+                        wing.material.opacity = Math.max(wing.material.opacity - 0.02, 0);
+                    });
+
+                    if (butterfly.children[0].material.opacity <= 0) {
+                        butterfly.position.set(
+                            (Math.random() - 0.5) * 20,
+                            (Math.random() - 0.5) * 20,
+                            (Math.random() - 0.5) * 20
+                        );
+                        velocities[i * 3] = 0;
+                        velocities[i * 3 + 1] = 0;
+                        velocities[i * 3 + 2] = 0;
+                        butterfly.children.forEach(wing => {
+                            wing.material.opacity = 0;
+                        });
+                    }
+                }
+
+                // 更新蝴蝶位置
+                butterfly.position.x += velocities[i * 3];
+                butterfly.position.y += velocities[i * 3 + 1];
+                butterfly.position.z += velocities[i * 3 + 2];
+
+                // 更新翅膀扇动
+                wingAngles[i] += wingFrequencies[i] * 0.02;
+                const wingAngle = Math.sin(wingAngles[i]) * Math.PI * 0.2;
+                butterfly.children[0].rotation.y = wingAngle; // 左翅膀
+                butterfly.children[1].rotation.y = -wingAngle; // 右翅膀
+
+                // 更新蝴蝶整体旋转
+                butterfly.rotation.x = rotations[i * 3];
+                butterfly.rotation.y = rotations[i * 3 + 1];
+                butterfly.rotation.z = rotations[i * 3 + 2];
+
+                // 边界检查
+                if (Math.abs(butterfly.position.x) > 50 || Math.abs(butterfly.position.y) > 50 || Math.abs(butterfly.position.z) > 50) {
+                    butterfly.position.set(
+                        (Math.random() - 0.5) * 50,
+                        (Math.random() - 0.5) * 50,
+                        (Math.random() - 0.5) * 50
+                    );
+                    velocities[i * 3] = 0;
+                    velocities[i * 3 + 1] = 0;
+                    velocities[i * 3 + 2] = 0;
+                    if (scatterPhase === 1) {
+                        butterfly.children.forEach(wing => {
+                            wing.material.opacity = 0;
+                        });
+                    }
+                }
+            }
+
+            // 检查散射阶段是否完成
+            if (scatterPhase === 1) {
+                let allFaded = true;
+                for (let i = 0; i < butterflyCount; i++) {
+                    if (butterflies[i].children[0].material.opacity > 0) {
+                        allFaded = false;
+                        break;
+                    }
+                }
+                if (allFaded) {
+                    scatterPhase = 0;
+                    // 重置所有蝴蝶的透明度
+                    butterflies.forEach(butterfly => {
+                        butterfly.children.forEach(wing => {
+                            wing.material.opacity = 0.6;
+                        });
+                    });
+                }
+            }
+
+            renderer.render(scene, camera3D);
+        }
+        animate();
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => {
+            camera3D.aspect = window.innerWidth / window.innerHeight;
+            camera3D.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 手势检测
+        async function setupHandTracking() {
+            try {
+                if (typeof Hands === 'undefined') {
+                    throw new Error('MediaPipe Hands is not defined. Check script loading.');
+                }
+
+                const video = document.getElementById('video');
+                
+                // 请求摄像头权限
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "user",
+                        width: 320,
+                        height: 240
+                    } 
+                });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    console.log('Camera initialized successfully.');
+                };
+
+                const hands = new Hands({
+                    locateFile: (file) => {
+                        console.log('Loading MediaPipe file:', file);
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`;
+                    }
+                });
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                hands.onResults((results) => {
+                    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                        const landmarks = results.multiHandLandmarks[0];
+                        handPosition.x = landmarks[0].x * window.innerWidth;
+                        handPosition.y = landmarks[0].y * window.innerHeight;
+                        console.log('Hand detected at:', handPosition.x.toFixed(2), handPosition.y.toFixed(2));
+
+                        const thumbTip = landmarks[4];
+                        const indexTip = landmarks[8];
+                        const distance = Math.sqrt(
+                            Math.pow(thumbTip.x - indexTip.x, 2) +
+                            Math.pow(thumbTip.y - indexTip.y, 2)
+                        );
+                        const wasGripping = isGripping;
+                        isGripping = distance < 0.05;
+                        console.log('Grip state:', isGripping ? 'Gripping' : 'Released');
+
+                        if (wasGripping && !isGripping) {
+                            scatterPhase = 1;
+                        }
+                    } else {
+                        console.log('No hand detected.');
+                        isGripping = false;
+                    }
+                });
+
+                await hands.initialize();
+                console.log('MediaPipe Hands initialized successfully.');
+
+                const camera = new Camera(video, {
+                    onFrame: async () => {
+                        await hands.send({ image: video });
+                    },
+                    width: 320,
+                    height: 240
+                });
+                await camera.start();
+                console.log('Camera started successfully.');
+            } catch (error) {
+                console.error('Hand tracking setup failed:', error.message);
+                alert('Failed to initialize hand tracking. Please ensure camera access is granted and check console for details.');
+                console.log('Falling back to particle animation without hand tracking.');
+            }
+        }
+
+        // 启动手势检测
+        setupHandTracking();
+    </script>
+</body>
+</html>

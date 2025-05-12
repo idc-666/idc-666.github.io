@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Butterfly Animation with Hand Gesture</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+        }
+        canvas { 
+            display: block; 
+        }
+        #video { 
+            display: none; 
+        }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            opacity: 0.8;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay muted playsinline></video>
+    <div id="instructions">挥动手掌驱散蝴蝶，握拳聚集蝴蝶</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+    <script>
+        // 场景初始化
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        document.body.appendChild(renderer.domElement);
+
+        // 蝴蝶参数
+        const butterflyCount = 100;
+        const butterflies = [];
+        const velocities = [];
+        const rotations = [];
+
+        // 创建蝴蝶几何体
+        function createButterfly() {
+            const group = new THREE.Group();
+
+            // 创建翅膀形状
+            const wingShape = new THREE.Shape();
+            wingShape.moveTo(0, 0);
+            wingShape.bezierCurveTo(1, 1, 2, 0.5, 2, 0);
+            wingShape.bezierCurveTo(2, -0.5, 1, -1, 0, 0);
+
+            const wingGeometry = new THREE.ShapeGeometry(wingShape);
+            const wingMaterial = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(Math.random(), 0.8, 0.6),
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending
+            });
+
+            // 左翅膀
+            const leftWing = new THREE.Mesh(wingGeometry, wingMaterial.clone());
+            leftWing.position.set(-0.5, 0, 0);
+            group.add(leftWing);
+
+            // 右翅膀
+            const rightWing = new THREE.Mesh(wingGeometry, wingMaterial.clone());
+            rightWing.position.set(0.5, 0, 0);
+            rightWing.scale.x = -1;
+            group.add(rightWing);
+
+            // 蝴蝶身体
+            const bodyGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.5, 8);
+            const bodyMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.5
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.x = Math.PI / 2;
+            group.add(body);
+
+            return group;
+        }
+
+        // 初始化蝴蝶群
+        for (let i = 0; i < butterflyCount; i++) {
+            const butterfly = createButterfly();
+            butterfly.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 40
+            );
+            butterfly.scale.set(0.5, 0.5, 0.5);
+
+            velocities.push(new THREE.Vector3());
+            rotations.push({
+                current: new THREE.Euler(),
+                target: new THREE.Euler(),
+                wingAngle: 0,
+                wingSpeed: 5 + Math.random() * 5
+            });
+
+            butterflies.push(butterfly);
+            scene.add(butterfly);
+        }
+
+        camera.position.z = 40;
+
+        // 手势状态
+        let handPosition = { x: 0, y: 0, z: 0 };
+        let isGripping = false;
+        const centerPoint = new THREE.Vector3();
+        const sphereRadius = 10;
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+
+            butterflies.forEach((butterfly, index) => {
+                const velocity = velocities[index];
+                const rotation = rotations[index];
+
+                if (!isGripping) {
+                    // 布朗运动
+                    velocity.add(new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.05,
+                        (Math.random() - 0.5) * 0.05,
+                        (Math.random() - 0.5) * 0.05
+                    ));
+                    velocity.multiplyScalar(0.98);
+
+                    // 手掌交互
+                    const toHand = new THREE.Vector3().subVectors(
+                        new THREE.Vector3(handPosition.x, handPosition.y, handPosition.z),
+                        butterfly.position
+                    );
+                    const distance = toHand.length();
+
+                    if (distance < 10) {
+                        toHand.normalize().multiplyScalar(-0.5 / Math.max(1, distance));
+                        velocity.add(toHand);
+                    }
+                } else {
+                    // 聚集效果
+                    const toCenter = new THREE.Vector3().subVectors(centerPoint, butterfly.position);
+                    const distance = toCenter.length();
+
+                    if (distance > sphereRadius) {
+                        toCenter.normalize().multiplyScalar(0.1);
+                        velocity.add(toCenter);
+                        velocity.multiplyScalar(0.95);
+                    } else {
+                        // 在球面上盘旋
+                        const axis = new THREE.Vector3(0, 1, 0);
+                        const orbit = new THREE.Vector3().crossVectors(toCenter, axis).normalize();
+                        velocity.add(orbit.multiplyScalar(0.05));
+                        velocity.multiplyScalar(0.98);
+                    }
+                }
+
+                // 更新位置
+                butterfly.position.add(velocity);
+
+                // 更新朝向
+                if (velocity.length() > 0.01) {
+                    rotation.target.y = Math.atan2(velocity.x, velocity.z);
+                    rotation.target.x = Math.asin(velocity.y / velocity.length()) * 0.5;
+                }
+
+                rotation.current.x += (rotation.target.x - rotation.current.x) * 0.1;
+                rotation.current.y += (rotation.target.y - rotation.current.y) * 0.1;
+                butterfly.rotation.copy(rotation.current);
+
+                // 翅膀扇动
+                rotation.wingAngle += rotation.wingSpeed * 0.1;
+                const wingAngle = Math.sin(rotation.wingAngle) * Math.PI * 0.2;
+                butterfly.children[0].rotation.y = wingAngle;
+                butterfly.children[1].rotation.y = -wingAngle;
+
+                // 边界检查
+                const bound = 50;
+                if (Math.abs(butterfly.position.x) > bound || 
+                    Math.abs(butterfly.position.y) > bound || 
+                    Math.abs(butterfly.position.z) > bound) {
+                    butterfly.position.set(
+                        (Math.random() - 0.5) * bound,
+                        (Math.random() - 0.5) * bound,
+                        (Math.random() - 0.5) * bound
+                    );
+                    velocity.set(0, 0, 0);
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 手势检测
+        async function setupHandTracking() {
+            try {
+                const video = document.getElementById('video');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "user",
+                        width: 640,
+                        height: 480
+                    } 
+                });
+                video.srcObject = stream;
+
+                const hands = new Hands({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`;
+                    }
+                });
+
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                hands.onResults((results) => {
+                    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                        const landmarks = results.multiHandLandmarks[0];
+                        const palm = landmarks[0];
+                        
+                        // 更新手掌位置
+                        handPosition.x = (palm.x - 0.5) * 80;
+                        handPosition.y = -(palm.y - 0.5) * 60;
+                        handPosition.z = palm.z * 40;
+
+                        // 检测手势
+                        const thumbTip = landmarks[4];
+                        const indexTip = landmarks[8];
+                        const distance = Math.sqrt(
+                            Math.pow(thumbTip.x - indexTip.x, 2) +
+                            Math.pow(thumbTip.y - indexTip.y, 2)
+                        );
+                        isGripping = distance < 0.1;
+                    } else {
+                        isGripping = false;
+                    }
+                });
+
+                await hands.initialize();
+
+                const camera = new Camera(video, {
+                    onFrame: async () => {
+                        await hands.send({ image: video });
+                    },
+                    width: 640,
+                    height: 480
+                });
+                await camera.start();
+            } catch (error) {
+                console.error('Hand tracking setup failed:', error);
+            }
+        }
+
+        setupHandTracking();
+    </script>
+</body>
+</html>

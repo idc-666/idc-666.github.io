@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可调式汽车提示音库</title>
+    <style>
+        /* 样式保持不变，与之前相同 */
+        :root { --primary: #2563eb; --secondary: #3b82f6; --danger: #dc2626; --success: #16a34a; --warning: #d97706; --dark: #1e3a8a; --light: #f8fafc; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: #f1f5f9; padding: 20px; }
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: var(--dark); margin-bottom: 10px; font-size: 2.2rem; }
+        .subtitle { color: #64748b; font-size: 1.1rem; }
+        .category-filter { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #cbd5e1; background: white; cursor: pointer; transition: all 0.2s; }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .filter-btn.warning { border-color: var(--warning); color: var(--warning); }
+        .filter-btn.warning.active { background: var(--warning); color: white; }
+        .filter-btn.danger { border-color: var(--danger); color: var(--danger); }
+        .filter-btn.danger.active { background: var(--danger); color: white; }
+        .filter-btn.success { border-color: var(--success); color: var(--success); }
+        .filter-btn.success.active { background: var(--success); color: white; }
+        .sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .sound-card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .sound-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); }
+        .card-header { background-color: var(--primary); color: white; padding: 15px; position: relative; }
+        .card-header.warning { background-color: var(--warning); }
+        .card-header.danger { background-color: var(--danger); }
+        .card-header.success { background-color: var(--success); }
+        .card-header.brand { background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%); }
+        .card-body { padding: 20px; }
+        .sound-desc { color: #64748b; margin-bottom: 15px; font-size: 14px; min-height: 40px; }
+        .sound-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .slider-container { margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; color: #475569; }
+        .slider { width: 100%; height: 6px; border-radius: 3px; background: #e2e8f0; outline: none; -webkit-appearance: none; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+        .card-header.warning ~ .card-body .slider::-webkit-slider-thumb { background: var(--warning); }
+        .card-header.danger ~ .card-body .slider::-webkit-slider-thumb { background: var(--danger); }
+        .card-header.success ~ .card-body .slider::-webkit-slider-thumb { background: var(--success); }
+        .card-header.brand ~ .card-body .slider::-webkit-slider-thumb { background: #7c3aed; }
+        button { border: none; border-radius: 5px; padding: 8px 15px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 5px; transition: all 0.2s ease; font-size: 14px; }
+        .play-btn { background-color: var(--primary); color: white; flex: 1; }
+        .play-btn.warning { background-color: var(--warning); }
+        .play-btn.danger { background-color: var(--danger); }
+        .play-btn.success { background-color: var(--success); }
+        .play-btn:hover { opacity: 0.9; }
+        .playing { background-color: var(--dark) !important; }
+        .download-btn { background-color: white; color: var(--primary); border: 1px solid var(--primary); }
+        .download-btn:hover { background-color: #e0e7ff; }
+        .sound-tag { position: absolute; right: 10px; top: 10px; background-color: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        footer { text-align: center; margin-top: 40px; color: #64748b; font-size: 14px; }
+        @media (max-width: 768px) { .sound-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>可调式汽车提示音库</h1>
+        <p class="subtitle">28种提示音 · 实时频率调节 · 支持下载WAV格式</p>
+    </header>
+    
+    <div class="category-filter">
+        <button class="filter-btn active" data-category="all">全部</button>
+        <button class="filter-btn warning" data-category="warning">警告</button>
+        <button class="filter-btn danger" data-category="danger">危险</button>
+        <button class="filter-btn" data-category="assist">辅助</button>
+        <button class="filter-btn success" data-category="status">状态</button>
+        <button class="filter-btn brand" data-category="brand">品牌</button>
+    </div>
+    
+    <div class="sound-grid" id="soundGrid">
+        <!-- 卡片将通过JavaScript动态生成 -->
+    </div>
+    
+    <footer>
+        <p>© 2023 汽车音效系统 | 基于Web Audio API技术实现</p>
+    </footer>
+
+    <script>
+        // 音频库 - 示例音效（完整版应包含28种）
+        const soundLibrary = [
+            {
+                id: 1,
+                title: "转向灯提示",
+                description: "标准滴答声，可调频率和间隔时间",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    baseFrequency: 800,
+                    minFrequency: 500,
+                    maxFrequency: 1500,
+                    duration: 0.1, 
+                    interval: 600, 
+                    wave: "square",
+                    isPlaying: false,
+                    audioNodes: [] // 存储当前音频节点
+                }
+            },
+            {
+                id: 2,
+                title: "车门未关提醒",
+                description: "双音交替提示，可调高低音频率",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    baseFrequency: 500,
+                    secondFrequency: 800,
+                    minFrequency: 300,
+                    maxFrequency: 1200,
+                    duration: 0.2,
+                    interval: 400,
+                    wave: "sine",
+                    isPlaying: false,
+                    audioNodes: []
+                }
+            }
+        ];
+
+        // 初始化音频系统
+        let audioContext;
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            alert("您的浏览器不支持Web Audio API，请使用Chrome/Firefox/Edge等现代浏览器");
+        }
+
+        // 生成音频卡片（带滑块控制）
+        const soundGrid = document.getElementById('soundGrid');
+        
+        soundLibrary.forEach(sound => {
+            const card = document.createElement('div');
+            card.className = 'sound-card';
+            card.dataset.id = sound.id;
+            card.dataset.category = sound.category;
+            
+            const headerClass = sound.type === 'brand' ? 'brand' : 
+                              sound.type === 'danger' ? 'danger' :
+                              sound.type === 'warning' ? 'warning' :
+                              sound.type === 'status' ? 'success' : '';
+            
+            const isDualFrequency = sound.params.secondFrequency !== undefined;
+            
+            card.innerHTML = `
+                <div class="card-header ${headerClass}">
+                    <h3>${sound.title}</h3>
+                    <span class="sound-tag">${getCategoryName(sound.category)}</span>
+                </div>
+                <div class="card-body">
+                    <p class="sound-desc">${sound.description}</p>
+                    
+                    <!-- 主频率滑块 -->
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>主频率: <span class="freq-value">${sound.params.baseFrequency}</span> Hz</span>
+                            <span>${sound.params.minFrequency}-${sound.params.maxFrequency}Hz</span>
+                        </div>
+                        <input type="range" class="slider frequency-slider" 
+                            min="${sound.params.minFrequency}" max="${sound.params.maxFrequency}" 
+                            value="${sound.params.baseFrequency}" step="10"
+                            data-param="baseFrequency">
+                    </div>
+                    
+                    <!-- 第二频率滑块（双音效） -->
+                    ${isDualFrequency ? `
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>次频率: <span class="second-freq-value">${sound.params.secondFrequency}</span> Hz</span>
+                            <span>${sound.params.minFrequency}-${sound.params.maxFrequency}Hz</span>
+                        </div>
+                        <input type="range" class="slider second-frequency-slider" 
+                            min="${sound.params.minFrequency}" max="${sound.params.maxFrequency}" 
+                            value="${sound.params.secondFrequency}" step="10"
+                            data-param="secondFrequency">
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 持续时间滑块 -->
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>持续时间: <span class="duration-value">${(sound.params.duration * 1000).toFixed(0)}</span> ms</span>
+                            <span>50-1000ms</span>
+                        </div>
+                        <input type="range" class="slider duration-slider" 
+                            min="50" max="1000" 
+                            value="${sound.params.duration * 1000}" step="10"
+                            data-param="duration">
+                    </div>
+                    
+                    <div class="sound-controls">
+                        <button class="play-btn ${headerClass}" data-id="${sound.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            试听
+                        </button>
+                        <button class="download-btn" data-id="${sound.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            下载
+                        </button>
+                    </div>
+                </div>
+            `;
+            soundGrid.appendChild(card);
+        });
+
+        // 分类名称映射
+        function getCategoryName(category) {
+            const names = {
+                'warning': '警告',
+                'danger': '危险',
+                'assist': '辅助',
+                'status': '状态',
+                'brand': '品牌'
+            };
+            return names[category] || category;
+        }
+
+        // 分类筛选
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const category = this.dataset.category;
+                document.querySelectorAll('.sound-card').forEach(card => {
+                    card.style.display = (category === 'all' || card.dataset.category === category) ? 
+                                         'block' : 'none';
+                });
+            });
+        });
+
+        // 滑块实时更新显示值
+        document.querySelectorAll('.slider').forEach(slider => {
+            slider.addEventListener('input', function() {
+                const valueDisplay = this.closest('.slider-container')
+                                    .querySelector('.slider-label span:first-child span');
+                if (valueDisplay) {
+                    valueDisplay.textContent = this.value;
+                }
+                
+                // 立即应用参数变化到正在播放的音效
+                const card = this.closest('.sound-card');
+                const soundId = parseInt(card.dataset.id);
+                const sound = soundLibrary.find(s => s.id === soundId);
+                
+                if (sound && sound.params.isPlaying) {
+                    updateSoundParams(sound);
+                    restartSound(sound);
+                }
+            });
+        });
+
+        // 更新音效参数
+        function updateSoundParams(sound) {
+            const card = document.querySelector(`.sound-card[data-id="${sound.id}"]`);
+            if (!card) return;
+            
+            card.querySelectorAll('.slider').forEach(slider => {
+                const param = slider.getAttribute('data-param');
+                const value = parseFloat(slider.value);
+                
+                if (param === 'duration') {
+                    sound.params[param] = value / 1000; // 转换为秒
+                } else {
+                    sound.params[param] = value;
+                }
+            });
+        }
+
+        // 重新启动音效（应用新参数）
+        function restartSound(sound) {
+            if (!sound.params.isPlaying) return;
+            
+            // 停止当前播放
+            sound.params.audioNodes.forEach(node => {
+                if (node.oscillator) node.oscillator.stop();
+                if (node.timeout) clearTimeout(node.timeout);
+            });
+            sound.params.audioNodes = [];
+            
+            // 用新参数重新播放
+            const instances = generateSound(sound);
+            sound.params.audioNodes = instances;
+            
+            // 更新播放按钮状态
+            const btn = document.querySelector(`.play-btn[data-id="${sound.id}"]`);
+            if (btn) {
+                btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    停止
+                `;
+                btn.classList.add('playing');
+            }
+        }
+
+        // 音频控制
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            const soundId = parseInt(btn.getAttribute('data-id'));
+            const sound = soundLibrary.find(s => s.id === soundId);
+            if (!sound) return;
+
+            // 播放按钮
+            if (btn.classList.contains('play-btn')) {
+                if (sound.params.isPlaying) {
+                    // 停止播放
+                    sound.params.audioNodes.forEach(node => {
+                        if (node.oscillator) node.oscillator.stop();
+                        if (node.timeout) clearTimeout(node.timeout);
+                    });
+                    sound.params.audioNodes = [];
+                    sound.params.isPlaying = false;
+                    resetButton(btn);
+                } else {
+                    // 开始播放
+                    updateSoundParams(sound);
+                    sound.params.isPlaying = true;
+                    const instances = generateSound(sound);
+                    sound.params.audioNodes = instances;
+                    
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                        停止
+                    `;
+                    btn.classList.add('playing');
+                    
+                    // 自动恢复按钮状态（针对非循环音效）
+                    if (!sound.params.interval && !sound.params.repeat) {
+                        setTimeout(() => {
+                            if (btn.classList.contains('playing')) {
+                                sound.params.isPlaying = false;
+                                resetButton(btn);
+                            }
+                        }, sound.params.duration * 1000 + 100);
+                    }
+                }
+            }
+            
+            // 下载按钮
+            if (btn.classList.contains('download-btn')) {
+                updateSoundParams(sound);
+                downloadSound(sound);
+            }
+        });
+
+        // 生成音效
+        function generateSound(sound) {
+            const instances = [];
+            const params = sound.params;
+            
+            // 单频率音效
+            const instance = playTone({
+                frequency: params.baseFrequency,
+                duration: params.duration,
+                wave: params.wave,
+                volume: 0.8
+            });
+            instances.push(instance);
+            
+            // 双频率音效
+            if (params.secondFrequency !== undefined) {
+                const instance2 = playTone({
+                    frequency: params.secondFrequency,
+                    duration: params.duration,
+                    wave: params.wave,
+                    volume: 0.6
+                });
+                instances.push(instance2);
+            }
+            
+            // 循环音效
+            if (params.interval) {
+                const loop = () => {
+                    if (!sound.params.isPlaying) return;
+                    
+                    const newInstance = playTone({
+                        frequency: params.baseFrequency,
+                        duration: params.duration,
+                        wave: params.wave,
+                        volume: 0.8
+                    });
+                    instances.push(newInstance);
+                    
+                    if (params.secondFrequency !== undefined) {
+                        const newInstance2 = playTone({
+                            frequency: params.secondFrequency,
+                            duration: params.duration,
+                            wave: params.wave,
+                            volume: 0.6
+                        });
+                        instances.push(newInstance2);
+                    }
+                    
+                    newInstance.timeout = setTimeout(loop, params.interval);
+                };
+                
+                instance.timeout = setTimeout(loop, params.interval);
+            }
+            
+            return instances;
+        }
+        
+        // 播放单音
+        function playTone(params) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = params.wave || 'sine';
+            oscillator.frequency.value = params.frequency;
+            
+            gainNode.gain.setValueAtTime(params.volume || 0.8, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + params.duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + params.duration);
+            
+            return { oscillator, gainNode };
+        }
+        
+        // 恢复按钮状态
+        function resetButton(btn) {
+            btn.classList.remove('playing');
+            btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                试听
+            `;
+        }
+        
+        // 下载音效
+        function downloadSound(sound) {
+            const offlineCtx = new OfflineAudioContext(1, 44100 * 2, 44100);
+            const oscillator = offlineCtx.createOscillator();
+            const gainNode = offlineCtx.createGain();
+            
+            oscillator.type = sound.params.wave || 'sine';
+            oscillator.frequency.value = sound.params.baseFrequency;
+            
+            gainNode.gain.setValueAtTime(0.8, offlineCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0, offlineCtx.currentTime + sound.params.duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(offlineCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(offlineCtx.currentTime + sound.params.duration);
+            
+            offlineCtx.startRendering().then(renderedBuffer => {
+                const buffer = renderedBuffer.getChannelData(0);
+                const wavBytes = getWavBytes(buffer, {
+                    isFloat: false,
+                    numChannels: 1,
+                    sampleRate: 44100,
+                });
+                
+                const blob = new Blob([wavBytes], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${sound.title.replace(/\s+/g, '_')}_${sound.params.baseFrequency}Hz.wav`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            });
+        }
+        
+        // WAV编码函数
+        function getWavBytes(buffer, options) {
+            const numChannels = options.numChannels || 1;
+            const sampleRate = options.sampleRate || 44100;
+            const bytesPerSample = options.isFloat ? 4 : 2;
+            const format = options.isFloat ? 3 : 1;
+            
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = buffer.length * bytesPerSample;
+            
+            const bufferSize = 44 + dataSize;
+            const buf = new ArrayBuffer(bufferSize);
+            const view = new DataView(buf);
+            
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bytesPerSample * 8, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+            
+            if (options.isFloat) {
+                for (let i = 0; i < buffer.length; i++) {
+                    view.setFloat32(44 + i * 4, buffer[i], true);
+                }
+            } else {
+                for (let i = 0; i < buffer.length; i++) {
+                    const s = Math.max(-1, Math.min(1, buffer[i]));
+                    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                }
+            }
+            
+            return new Uint8Array(buf);
+        }
+        
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+    </script>
+</body>
+</html>
