@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汽车系统提示音大全</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #3b82f6;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --warning: #d97706;
+            --dark: #1e3a8a;
+            --light: #f8fafc;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+        
+        .category-filter {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .filter-btn.warning {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        
+        .filter-btn.warning.active {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .filter-btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .filter-btn.danger.active {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .filter-btn.success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        
+        .filter-btn.success.active {
+            background: var(--success);
+            color: white;
+        }
+        
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .sound-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .sound-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            position: relative;
+        }
+        
+        .card-header.warning {
+            background-color: var(--warning);
+        }
+        
+        .card-header.danger {
+            background-color: var(--danger);
+        }
+        
+        .card-header.success {
+            background-color: var(--success);
+        }
+        
+        .card-header.brand {
+            background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%);
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .sound-desc {
+            color: #64748b;
+            margin-bottom: 20px;
+            font-size: 14px;
+            min-height: 40px;
+        }
+        
+        .sound-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .play-btn {
+            background-color: var(--primary);
+            color: white;
+            flex: 1;
+        }
+        
+        .play-btn.warning {
+            background-color: var(--warning);
+        }
+        
+        .play-btn.danger {
+            background-color: var(--danger);
+        }
+        
+        .play-btn.success {
+            background-color: var(--success);
+        }
+        
+        .play-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .playing {
+            background-color: var(--dark) !important;
+        }
+        
+        .download-btn {
+            background-color: white;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        .download-btn:hover {
+            background-color: #e0e7ff;
+        }
+        
+        .sound-tag {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .sound-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>汽车系统提示音大全</h1>
+        <p class="subtitle">28种常见提示音 · 实时生成 · 支持下载WAV格式</p>
+    </header>
+    
+    <div class="category-filter">
+        <button class="filter-btn active" data-category="all">全部</button>
+        <button class="filter-btn warning" data-category="warning">警告</button>
+        <button class="filter-btn danger" data-category="danger">危险</button>
+        <button class="filter-btn" data-category="assist">辅助</button>
+        <button class="filter-btn success" data-category="status">状态</button>
+        <button class="filter-btn brand" data-category="brand">品牌</button>
+    </div>
+    
+    <div class="sound-grid" id="soundGrid">
+        <!-- 卡片将通过JavaScript动态生成 -->
+    </div>
+    
+    <footer>
+        <p>© 2023 汽车音效系统 | 基于Web Audio API技术实现</p>
+    </footer>
+
+    <script>
+        // 音频库 - 28种常见汽车提示音
+        const soundLibrary = [
+            // 警告类（黄色）
+            {
+                id: 1,
+                title: "转向灯提示",
+                description: "标准滴答声，800Hz方波，600ms间隔",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    frequency: 800, 
+                    duration: 0.1, 
+                    interval: 600, 
+                    wave: "square" 
+                }
+            },
+            {
+                id: 2,
+                title: "车门未关提醒",
+                description: "双音交替提示，500Hz+800Hz正弦波",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    frequencies: [500, 800], 
+                    duration: 0.2,
+                    interval: 400,
+                    wave: "sine"
+                }
+            },
+            {
+                id: 3,
+                title: "灯光未关提醒",
+                description: "低频脉冲提示，400Hz方波",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    frequency: 400, 
+                    duration: 0.3, 
+                    interval: 1000,
+                    wave: "square" 
+                }
+            },
+            {
+                id: 4,
+                title: "钥匙未拔提醒",
+                description: "短促三连音，1kHz正弦波",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    frequency: 1000, 
+                    duration: 0.1,
+                    interval: 100,
+                    repeat: 3,
+                    wave: "sine"
+                }
+            },
+            
+            // 危险类（红色）
+            {
+                id: 5,
+                title: "安全带未系警报",
+                description: "高频持续蜂鸣，1.2kHz正弦波",
+                type: "danger",
+                category: "danger",
+                params: { 
+                    frequency: 1200, 
+                    duration: 0.5, 
+                    interval: 500,
+                    wave: "sine" 
+                }
+            },
+            {
+                id: 6,
+                title: "手刹未放警告",
+                description: "急促重复双音，600Hz+900Hz",
+                type: "danger",
+                category: "danger",
+                params: { 
+                    frequencies: [600, 900], 
+                    duration: 0.2,
+                    interval: 300,
+                    wave: "sine"
+                }
+            },
+            {
+                id: 7,
+                title: "碰撞预警",
+                description: "尖锐高频脉冲，1.5kHz方波",
+                type: "danger",
+                category: "danger",
+                params: { 
+                    frequency: 1500, 
+                    duration: 0.05,
+                    interval: 150,
+                    wave: "square"
+                }
+            },
+            {
+                id: 8,
+                title: "胎压异常",
+                description: "中频四连音，800Hz正弦波",
+                type: "danger",
+                category: "danger",
+                params: { 
+                    frequency: 800, 
+                    duration: 0.15,
+                    interval: 200,
+                    repeat: 4,
+                    wave: "sine"
+                }
+            },
+            
+            // 辅助类（蓝色）
+            {
+                id: 9,
+                title: "倒车雷达",
+                description: "渐进式蜂鸣，800Hz-2kHz扫频",
+                type: "assist",
+                category: "assist",
+                params: { 
+                    frequency: 800, 
+                    endFrequency: 2000,
+                    duration: 0.8,
+                    wave: "sine",
+                    sweep: true
+                }
+            },
+            {
+                id: 10,
+                title: "盲区监测",
+                description: "左右声道交替提示，700Hz正弦波",
+                type: "assist",
+                category: "assist",
+                params: { 
+                    frequency: 700, 
+                    duration: 0.2,
+                    pan: [-1, 1],
+                    interval: 300,
+                    wave: "sine"
+                }
+            },
+            {
+                id: 11,
+                title: "车道偏离",
+                description: "柔和振动提示，400Hz锯齿波",
+                type: "assist",
+                category: "assist",
+                params: { 
+                    frequency: 400, 
+                    duration: 0.3,
+                    wave: "sawtooth",
+                    vibrato: true
+                }
+            },
+            {
+                id: 12,
+                title: "自动泊车",
+                description: "节奏型提示音，三连音序列",
+                type: "assist",
+                category: "assist",
+                params: { 
+                    sequence: [
+                        { freq: 500, dur: 0.1 },
+                        { freq: 800, dur: 0.1 },
+                        { freq: 1200, dur: 0.2 }
+                    ],
+                    interval: 500,
+                    wave: "sine"
+                }
+            },
+            
+            // 状态类（绿色）
+            {
+                id: 13,
+                title: "启动完成",
+                description: "上升和弦音，C大三和弦",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequencies: [523.25, 659.25, 783.99], // C5-E5-G5
+                    duration: 0.5,
+                    wave: "sine",
+                    arpeggio: true
+                }
+            },
+            {
+                id: 14,
+                title: "熄火提示",
+                description: "下降和弦音，G大三和弦",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequencies: [783.99, 659.25, 523.25], // G5-E5-C5
+                    duration: 0.5,
+                    wave: "sine",
+                    arpeggio: true
+                }
+            },
+            {
+                id: 15,
+                title: "充电开始",
+                description: "电子脉冲音，带滤波效果",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequency: 800, 
+                    duration: 0.8,
+                    wave: "square",
+                    filter: true
+                }
+            },
+            {
+                id: 16,
+                title: "充电完成",
+                description: "明亮完成音，1kHz+2kHz",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequencies: [1000, 2000], 
+                    duration: 0.3,
+                    wave: "sine",
+                    fade: true
+                }
+            },
+            
+            // 品牌音效（紫色）
+            {
+                id: 17,
+                title: "宝马启动音",
+                description: "标志性双音序列",
+                type: "brand",
+                category: "brand",
+                params: { 
+                    sequence: [
+                        { freq: 440, dur: 0.2 },
+                        { freq: 880, dur: 0.3 }
+                    ],
+                    wave: "sine"
+                }
+            },
+            {
+                id: 18,
+                title: "特斯拉启动音",
+                description: "科幻风格合成音",
+                type: "brand",
+                category: "brand",
+                params: { 
+                    frequency: 600,
+                    endFrequency: 1200,
+                    duration: 1.2,
+                    wave: "sine",
+                    sweep: true,
+                    vibrato: true
+                }
+            },
+            {
+                id: 19,
+                title: "奔驰提示音",
+                description: "经典三和弦",
+                type: "brand",
+                category: "brand",
+                params: { 
+                    frequencies: [523.25, 659.25, 783.99], // C5-E5-G5
+                    duration: 0.4,
+                    wave: "sine"
+                }
+            },
+            {
+                id: 20,
+                title: "奥迪转向音",
+                description: "清脆电子滴答声",
+                type: "brand",
+                category: "brand",
+                params: { 
+                    frequency: 1200, 
+                    duration: 0.08,
+                    interval: 600,
+                    wave: "square"
+                }
+            },
+            
+            // 其他常见提示音
+            {
+                id: 21,
+                title: "限速提醒",
+                description: "规律性三连脉冲",
+                type: "warning",
+                category: "warning",
+                params: { 
+                    frequency: 1000, 
+                    duration: 0.1,
+                    interval: 150,
+                    repeat: 3,
+                    wave: "square"
+                }
+            },
+            {
+                id: 22,
+                title: "疲劳驾驶提醒",
+                description: "逐渐加强的警报音",
+                type: "danger",
+                category: "danger",
+                params: { 
+                    frequency: 600,
+                    endFrequency: 1200,
+                    duration: 2,
+                    wave: "sine",
+                    sweep: true,
+                    volumeRamp: true
+                }
+            },
+            {
+                id: 23,
+                title: "自动大灯开启",
+                description: "短促确认音",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequency: 800, 
+                    duration: 0.15,
+                    wave: "sine"
+                }
+            },
+            {
+                id: 24,
+                title: "雨量感应启动",
+                description: "水滴模拟音",
+                type: "assist",
+                category: "assist",
+                params: { 
+                    frequency: 1200, 
+                    duration: 0.05,
+                    interval: 100,
+                    repeat: 5,
+                    wave: "sine",
+                    decay: true
+                }
+            },
+            {
+                id: 25,
+                title: "经济模式切换",
+                description: "柔和下降音",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequency: 1000,
+                    endFrequency: 500,
+                    duration: 0.5,
+                    wave: "sine",
+                    sweep: true
+                }
+            },
+            {
+                id: 26,
+                title: "运动模式切换",
+                description: "激昂上升音",
+                type: "status",
+                category: "status",
+                params: { 
+                    frequency: 500,
+                    endFrequency: 1500,
+                    duration: 0.8,
+                    wave: "sawtooth",
+                    sweep: true
+                }
+            },
+            {
+                id: 27,
+                title: "导航提示音",
+                description: "中性单音提示",
+                type: "assist",
+                category: "assist",
+                params: { 
+                    frequency: 600, 
+                    duration: 0.2,
+                    wave: "sine"
+                }
+            },
+            {
+                id: 28,
+                title: "紧急制动触发",
+                description: "急促高频警报",
+                type: "danger",
+                category: "danger",
+                params: { 
+                    frequency: 1500, 
+                    duration: 0.8,
+                    wave: "square",
+                    tremolo: true
+                }
+            }
+        ];
+
+        // 初始化音频系统
+        let audioContext;
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            alert("您的浏览器不支持Web Audio API，请使用Chrome/Firefox/Edge等现代浏览器");
+        }
+
+        // 生成音频卡片
+        const soundGrid = document.getElementById('soundGrid');
+        let activeSounds = [];
+        
+        soundLibrary.forEach(sound => {
+            const card = document.createElement('div');
+            card.className = 'sound-card';
+            card.dataset.category = sound.category;
+            
+            const headerClass = sound.type === 'brand' ? 'brand' : 
+                              sound.type === 'danger' ? 'danger' :
+                              sound.type === 'warning' ? 'warning' :
+                              sound.type === 'status' ? 'success' : '';
+            
+            card.innerHTML = `
+                <div class="card-header ${headerClass}">
+                    <h3>${sound.title}</h3>
+                    <span class="sound-tag">${getCategoryName(sound.category)}</span>
+                </div>
+                <div class="card-body">
+                    <p class="sound-desc">${sound.description}</p>
+                    <div class="sound-controls">
+                        <button class="play-btn ${headerClass}" data-id="${sound.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            试听
+                        </button>
+                        <button class="download-btn" data-id="${sound.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            下载
+                        </button>
+                    </div>
+                </div>
+            `;
+            soundGrid.appendChild(card);
+        });
+
+        // 分类名称映射
+        function getCategoryName(category) {
+            const names = {
+                'warning': '警告',
+                'danger': '危险',
+                'assist': '辅助',
+                'status': '状态',
+                'brand': '品牌'
+            };
+            return names[category] || category;
+        }
+
+        // 分类筛选
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const category = this.dataset.category;
+                document.querySelectorAll('.sound-card').forEach(card => {
+                    card.style.display = (category === 'all' || card.dataset.category === category) ? 
+                                         'block' : 'none';
+                });
+            });
+        });
+
+        // 音频控制
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            const soundId = parseInt(btn.getAttribute('data-id'));
+            const sound = soundLibrary.find(s => s.id === soundId);
+            if (!sound) return;
+
+            // 播放按钮
+            if (btn.classList.contains('play-btn')) {
+                stopAllSounds();
+                btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    停止
+                `;
+                btn.classList.add('playing');
+                
+                const instances = generateSound(sound);
+                activeSounds.push({
+                    id: soundId,
+                    instances: instances,
+                    button: btn
+                });
+                
+                // 自动恢复按钮状态（针对非循环音效）
+                if (!sound.params.interval && !sound.params.repeat) {
+                    setTimeout(() => {
+                        if (btn.classList.contains('playing')) {
+                            resetButton(btn);
+                        }
+                    }, sound.params.duration * 1000 + 100);
+                }
+            }
+            
+            // 下载按钮
+            if (btn.classList.contains('download-btn')) {
+                downloadSound(sound);
+            }
+        });
+
+        // 生成音效
+        function generateSound(sound) {
+            const instances = [];
+            
+            // 序列型音效（如品牌启动音）
+            if (sound.params.sequence) {
+                sound.params.sequence.forEach((note, i) => {
+                    const delay = i * (sound.params.interval || 0);
+                    setTimeout(() => {
+                        const instance = playTone({
+                            frequency: note.freq,
+                            duration: note.dur,
+                            wave: sound.params.wave,
+                            volume: 0.8
+                        });
+                        instances.push(instance);
+                    }, delay * 1000);
+                });
+                return instances;
+            }
+            
+            // 扫频音效（倒车雷达）
+            if (sound.params.sweep) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = sound.params.wave || 'sine';
+                oscillator.frequency.setValueAtTime(
+                    sound.params.frequency, 
+                    audioContext.currentTime
+                );
+                oscillator.frequency.exponentialRampToValueAtTime(
+                    sound.params.endFrequency, 
+                    audioContext.currentTime + sound.params.duration
+                );
+                
+                // 音量控制
+                gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+                if (sound.params.volumeRamp) {
+                    gainNode.gain.exponentialRampToValueAtTime(
+                        0.01, 
+                        audioContext.currentTime + sound.params.duration
+                    );
+                } else if (sound.params.fade) {
+                    gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(
+                        0, 
+                        audioContext.currentTime + sound.params.duration
+                    );
+                }
+                
+                // 颤音效果
+                if (sound.params.vibrato) {
+                    const vibrato = audioContext.createOscillator();
+                    const vibratoGain = audioContext.createGain();
+                    vibrato.frequency.value = 5;
+                    vibratoGain.gain.value = 20;
+                    vibrato.connect(vibratoGain);
+                    vibratoGain.connect(oscillator.frequency);
+                    vibrato.start();
+                    vibrato.stop(audioContext.currentTime + sound.params.duration);
+                }
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + sound.params.duration);
+                
+                instances.push({ oscillator, gainNode });
+                return instances;
+            }
+            
+            // 多音同时播放（和弦）
+            if (sound.params.frequencies) {
+                sound.params.frequencies.forEach((freq, i) => {
+                    const delay = sound.params.arpeggio ? i * 0.1 : 0;
+                    setTimeout(() => {
+                        const instance = playTone({
+                            frequency: freq,
+                            duration: sound.params.duration,
+                            wave: sound.params.wave,
+                            pan: sound.params.pan ? sound.params.pan[i] : 0,
+                            volume: 0.6
+                        });
+                        instances.push(instance);
+                    }, delay * 1000);
+                });
+                return instances;
+            }
+            
+            // 循环音效（转向灯）
+            if (sound.params.interval) {
+                const loop = () => {
+                    const instance = playTone({
+                        frequency: sound.params.frequency,
+                        duration: sound.params.duration,
+                        wave: sound.params.wave,
+                        volume: 0.8
+                    });
+                    instances.push(instance);
+                    
+                    // 设置下次循环
+                    if (sound.params.repeat) {
+                        sound.params.repeat--;
+                        if (sound.params.repeat <= 0) return;
+                    }
+                    
+                    instance.timeout = setTimeout(loop, sound.params.interval);
+                };
+                loop();
+                return instances;
+            }
+            
+            // 单次音效
+            const instance = playTone({
+                frequency: sound.params.frequency,
+                duration: sound.params.duration,
+                wave: sound.params.wave,
+                volume: 0.8,
+                decay: sound.params.decay,
+                filter: sound.params.filter
+            });
+            instances.push(instance);
+            return instances;
+        }
+        
+        // 播放单音
+        function playTone(params) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const panner = audioContext.createStereoPanner();
+            
+            oscillator.type = params.wave || 'sine';
+            oscillator.frequency.value = params.frequency;
+            
+            // 声像控制
+            if (params.pan !== undefined) {
+                panner.pan.value = params.pan;
+                oscillator.connect(panner);
+                panner.connect(gainNode);
+            } else {
+                oscillator.connect(gainNode);
+            }
+            
+            // 音量包络
+            gainNode.gain.setValueAtTime(params.volume || 0.8, audioContext.currentTime);
+            if (params.decay) {
+                gainNode.gain.exponentialRampToValueAtTime(
+                    0.01, 
+                    audioContext.currentTime + params.duration
+                );
+            } else {
+                gainNode.gain.linearRampToValueAtTime(
+                    0, 
+                    audioContext.currentTime + params.duration
+                );
+            }
+            
+            // 滤波效果
+            if (params.filter) {
+                const filter = audioContext.createBiquadFilter();
+                filter.type = "lowpass";
+                filter.frequency.value = 2000;
+                filter.Q.value = 1;
+                gainNode.connect(filter);
+                filter.connect(audioContext.destination);
+                
+                // 滤波动态变化
+                filter.frequency.setValueAtTime(2000, audioContext.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(
+                    200, 
+                    audioContext.currentTime + params.duration
+                );
+            } else {
+                gainNode.connect(audioContext.destination);
+            }
+            
+            // 震音效果
+            if (params.tremolo) {
+                const tremolo = audioContext.createOscillator();
+                const tremoloGain = audioContext.createGain();
+                tremolo.frequency.value = 10;
+                tremoloGain.gain.value = 0.7;
+                tremolo.connect(tremoloGain);
+                tremoloGain.connect(gainNode.gain);
+                tremolo.start();
+                tremolo.stop(audioContext.currentTime + params.duration);
+            }
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + params.duration);
+            
+            return { oscillator, gainNode, panner };
+        }
+        
+        // 停止所有音效
+        function stopAllSounds() {
+            activeSounds.forEach(sound => {
+                sound.instances.forEach(instance => {
+                    if (instance.timeout) clearTimeout(instance.timeout);
+                    if (instance.oscillator) instance.oscillator.stop();
+                });
+                resetButton(sound.button);
+            });
+            activeSounds = [];
+        }
+        
+        // 恢复按钮状态
+        function resetButton(btn) {
+            btn.classList.remove('playing');
+            btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                试听
+            `;
+        }
+        
+        // 下载音效
+        function downloadSound(sound) {
+            // 创建离线音频上下文
+            const offlineCtx = new OfflineAudioContext(1, 44100 * 2, 44100);
+            const oscillator = offlineCtx.createOscillator();
+            const gainNode = offlineCtx.createGain();
+            
+            // 基本参数设置
+            oscillator.type = sound.params.wave || 'sine';
+            
+            // 扫频音效
+            if (sound.params.sweep) {
+                oscillator.frequency.setValueAtTime(
+                    sound.params.frequency, 
+                    offlineCtx.currentTime
+                );
+                oscillator.frequency.exponentialRampToValueAtTime(
+                    sound.params.endFrequency, 
+                    offlineCtx.currentTime + sound.params.duration
+                );
+            } 
+            // 多音处理（简化版：只生成第一个频率）
+            else if (sound.params.frequencies) {
+                oscillator.frequency.value = sound.params.frequencies[0];
+            } 
+            // 默认单音
+            else {
+                oscillator.frequency.value = sound.params.frequency || 800;
+            }
+            
+            // 音量包络
+            gainNode.gain.setValueAtTime(0.8, offlineCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.01, 
+                offlineCtx.currentTime + (sound.params.duration || 1)
+            );
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(offlineCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(offlineCtx.currentTime + (sound.params.duration || 1));
+            
+            // 渲染并下载
+            offlineCtx.startRendering().then(renderedBuffer => {
+                const buffer = renderedBuffer.getChannelData(0);
+                const wavBytes = getWavBytes(buffer, {
+                    isFloat: false,
+                    numChannels: 1,
+                    sampleRate: 44100,
+                });
+                
+                const blob = new Blob([wavBytes], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${sound.title.replace(/\s+/g, '_')}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            });
+        }
+        
+        // WAV编码函数
+        function getWavBytes(buffer, options) {
+            const numChannels = options.numChannels || 1;
+            const sampleRate = options.sampleRate || 44100;
+            const bytesPerSample = options.isFloat ? 4 : 2;
+            const format = options.isFloat ? 3 : 1;
+            
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = buffer.length * bytesPerSample;
+            
+            const bufferSize = 44 + dataSize;
+            const buf = new ArrayBuffer(bufferSize);
+            const view = new DataView(buf);
+            
+            // 写入WAV头部
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bytesPerSample * 8, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+            
+            // 写入PCM数据
+            if (options.isFloat) {
+                for (let i = 0; i < buffer.length; i++) {
+                    view.setFloat32(44 + i * 4, buffer[i], true);
+                }
+            } else {
+                for (let i = 0; i < buffer.length; i++) {
+                    const s = Math.max(-1, Math.min(1, buffer[i]));
+                    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                }
+            }
+            
+            return new Uint8Array(buf);
+        }
+        
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+    </script>
+</body>
+</html>
