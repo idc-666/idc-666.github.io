@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>动画浏览器（JSON + APNG）</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.9.6/lottie.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9f9f9;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+    h1 {
+      font-size: 36px;
+      color: #1e88e5;
+      margin-bottom: 40px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      gap: 15px;
+    }
+    .tabs button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 30px;
+      background: #e0e0e0;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .tabs button.active {
+      background: #1e88e5;
+      color: white;
+    }
+    .section {
+      display: none;
+      width: 100%;
+      text-align: center;
+    }
+    .section.active {
+      display: block;
+    }
+    .drop-area {
+      border: 3px dashed #1e88e5;
+      padding: 25px;
+      border-radius: 20px;
+      background: white;
+      text-align: center;
+      color: #1e88e5;
+      cursor: pointer;
+      margin-bottom: 30px;
+      max-width: 850px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      transition: background 0.3s ease;
+    }
+    .drop-area.hover {
+      background: #e3f2fd;
+    }
+    #animationGrid, #apngGrid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 18%;
+      justify-content: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    .lottie-box, .apng-box {
+      width: 100%;
+      height: 60%;
+      min-height: 200px;
+      background: #fff;
+      margin: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 15px;
+    }
+    .file-info {
+      font-size: 14px;
+      margin-top: 10px;
+      color: #666;
+      display: block;
+    }
+    /* JSON 文件信息左对齐，并两侧预留64px，自动换行 */
+    #jsonSection .file-info {
+      text-align: left;
+      padding: 0 14px;
+      box-sizing: border-box;
+      word-break: break-all;
+    }
+    /* APNG 文件信息居中 */
+    #apngSection .file-info {
+      text-align: center;
+    }
+    .file-info span {
+      display: block;
+      margin: 5px 0;
+    }
+    .frame-controls {
+      margin-top: 10px;
+    }
+    .export-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      border: none;
+      background: #1e88e5;
+      color: white;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .export-btn:hover {
+      background: #1565c0;
+    }
+    #stats {
+      margin-top: 40px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>在线动画浏览器</h1>
+  <div class="tabs">
+    <button id="tabJson" class="active">Lottie JSON</button>
+    <button id="tabApng">APNG</button>
+  </div>
+
+  <!-- JSON 动画部分 -->
+  <div id="jsonSection" class="section active">
+    <div class="drop-area" id="dropJson">
+      拖拽 JSON 文件到此或点击选择上传（带 images 文件的，请把 json 和 images 文件放在 html 文件同一目录下）
+      <input type="file" id="jsonUpload" accept=".json" multiple style="display: none;" />
+    </div>
+    <div style="margin-bottom: 20px;">
+      <button id="clearJson" class="export-btn" style="background:#e53935;">清空 JSON</button>
+      <label style="margin-left:20px;">背景色：</label>
+      <input type="color" id="jsonBg" value="#ffffff" />
+    </div>
+    <div id="animationGrid"></div>
+  </div>
+
+  <!-- APNG 动画部分 -->
+  <div id="apngSection" class="section">
+    <div class="drop-area" id="dropApng">
+      拖拽 APNG 文件到此或点击选择上传
+      <input type="file" id="apngUpload" accept=".png" multiple style="display: none;" />
+    </div>
+    <div style="margin-bottom: 20px;">
+      <button id="clearApng" class="export-btn" style="background:#e53935;">清空 APNG</button>
+      <label style="margin-left:20px;">背景色：</label>
+      <input type="color" id="apngBg" value="#ffffff" />
+    </div>
+    <div id="apngGrid"></div>
+  </div>
+
+  <!-- 上传统计 -->
+  <div id="stats">
+    <strong>上传统计：</strong>
+    <span id="jsonCount">JSON 动画数: 0</span>，
+    <span id="apngCount">APNG 动画数: 0</span>，
+    <span id="totalSize">总上传数: 0，总大小: 0 KB</span>
+  </div>
+
+  <script>
+    const tabJson = document.getElementById('tabJson');
+    const tabApng = document.getElementById('tabApng');
+    const jsonSection = document.getElementById('jsonSection');
+    const apngSection = document.getElementById('apngSection');
+
+    tabJson.onclick = () => {
+      tabJson.classList.add('active');
+      tabApng.classList.remove('active');
+      jsonSection.classList.add('active');
+      apngSection.classList.remove('active');
+    };
+    tabApng.onclick = () => {
+      tabApng.classList.add('active');
+      tabJson.classList.remove('active');
+      apngSection.classList.add('active');
+      jsonSection.classList.remove('active');
+    };
+
+    const jsonCount = document.getElementById('jsonCount');
+    const apngCount = document.getElementById('apngCount');
+    const totalSize = document.getElementById('totalSize');
+    let jsonFileCount = 0, apngFileCount = 0, totalFileSize = 0;
+    function updateStats() {
+      jsonCount.textContent = 'JSON 动画数: ' + jsonFileCount;
+      apngCount.textContent = 'APNG 动画数: ' + apngFileCount;
+      totalSize.textContent = '总上传数: ' + (jsonFileCount + apngFileCount) + '，总大小: ' + (totalFileSize/1024).toFixed(1) + ' KB';
+    }
+
+    const dropJson = document.getElementById('dropJson');
+    const jsonInput = document.getElementById('jsonUpload');
+    const jsonGrid = document.getElementById('animationGrid');
+    const jsonBg = document.getElementById('jsonBg');
+    const clearJson = document.getElementById('clearJson');
+
+    dropJson.onclick = () => jsonInput.click();
+    dropJson.ondragover = e => { e.preventDefault(); dropJson.classList.add('hover'); };
+    dropJson.ondragleave = () => dropJson.classList.remove('hover');
+    dropJson.ondrop = e => { e.preventDefault(); dropJson.classList.remove('hover'); handleJsonFiles(e.dataTransfer.files); };
+    jsonInput.onchange = e => handleJsonFiles(e.target.files);
+    clearJson.onclick = () => { jsonGrid.innerHTML = ''; jsonFileCount = 0; totalFileSize = 0; updateStats(); };
+    jsonBg.oninput = () => document.querySelectorAll('.lottie-box').forEach(b => b.style.backgroundColor = jsonBg.value);
+
+    function handleJsonFiles(files) {
+      [...files].forEach(file => {
+        const reader = new FileReader();
+        reader.onload = evt => {
+          try {
+            const json = JSON.parse(evt.target.result);
+            const card = document.createElement('div'); card.className = 'card';
+            const container = document.createElement('div'); container.className = 'lottie-box'; container.style.backgroundColor = jsonBg.value;
+            const title = document.createElement('div'); title.className = 'file-info';
+            title.innerHTML = `<span>${file.name}</span><span>大小: ${(file.size/1024).toFixed(1)} KB</span>` +
+                              (json.w && json.h ? `<span>尺寸: ${json.w}×${json.h}</span>` : '');
+            const slider = document.createElement('input'); slider.type = 'range'; slider.min = json.ip; slider.max = json.op; slider.value = json.ip; slider.className = 'frame-controls';
+            const exportBtn = document.createElement('button'); exportBtn.textContent = '导出 JSON'; exportBtn.className = 'export-btn';
+            exportBtn.onclick = () => { const blob = new Blob([JSON.stringify(json,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name.replace(/\.json$/,'')+'_edited.json'; a.click(); };
+            card.append(title, container, slider, exportBtn);
+            jsonGrid.appendChild(card);
+            const anim = lottie.loadAnimation({container, renderer:'svg', loop:true, autoplay:true, animationData:json});
+            slider.oninput = () => anim.goToAndStop(Number(slider.value), true);
+            jsonFileCount++; totalFileSize += file.size; updateStats();
+          } catch {
+            alert('无效的 JSON 文件: ' + file.name);
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    const dropApng = document.getElementById('dropApng');
+    const apngInput = document.getElementById('apngUpload');
+    const apngGrid = document.getElementById('apngGrid');
+    const clearApng = document.getElementById('clearApng');
+    const apngBg = document.getElementById('apngBg');
+
+    dropApng.onclick = () => apngInput.click();
+    dropApng.ondragover = e => { e.preventDefault(); dropApng.classList.add('hover'); };
+    dropApng.ondragleave = () => dropApng.classList.remove('hover');
+    dropApng.ondrop = e => { e.preventDefault(); dropApng.classList.remove('hover'); handleApngFiles(e.dataTransfer.files); };
+    apngInput.onchange = e => handleApngFiles(e.target.files);
+    clearApng.onclick = () => { apngGrid.innerHTML = ''; apngFileCount = 0; totalFileSize = 0; updateStats(); };
+    apngBg.oninput = () => document.querySelectorAll('.apng-box').forEach(b => b.style.backgroundColor = apngBg.value);
+
+    function handleApngFiles(files) {
+      [...files].forEach(file => {
+        const url = URL.createObjectURL(file);
+        const card = document.createElement('div'); card.className = 'card';
+        const box = document.createElement('div'); box.className = 'apng-box';
+        const img = new Image(); img.src = url; img.style.maxWidth = '100%'; img.style.maxHeight = '100%'; box.append(img);
+        const title = document.createElement('div'); title.className = 'file-info';
+        title.innerHTML = `<span>${file.name}</span><span>大小: ${(file.size/1024).toFixed(1)} KB</span>`; img.onload = () => { title.innerHTML += `<span>尺寸: ${img.naturalWidth}×${img.naturalHeight}</span>`; };
+        card.append(title, box);
+        apngGrid.appendChild(card);
+        apngFileCount++; totalFileSize += file.size; updateStats();
+      });
+    }
+  </script>
+</body>
+</html>
